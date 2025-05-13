@@ -1,0 +1,106 @@
+---
+title: "Reproduced results of Roedel 2015"
+author: "Jifan, Minoo, Yazid"
+format: html
+editor: visual
+---
+
+```{r library and data, include=FALSE}
+here::i_am("output.qmd")
+library(here) # call on the data using a relative directory
+library(prodlim) # median follow-up time
+## add libraries here
+
+load("actual data/Primary_endpoint_data.rda") # load data
+```
+
+## Introduction
+
+This page is to reproduce the tables and figures from the Roedel et al. 2015.
+
+## Table 1
+
+```{r functions for table 1}
+# Function to calculate percentages
+calc_percent <- function(n, total) {
+  n_sum <- sum(n, na.rm=TRUE)
+  pct <- 100 * n_sum/total
+  if (pct < 1 && pct > 0) {
+    sprintf("%.0f (<1%%)", n_sum)
+  } else {
+    sprintf("%.0f (%.0f%%)", n_sum, round(pct))
+  }
+}
+
+# Function to calculate statistics for numeric variables
+calc_stats <- function(x) {
+  if(all(is.na(x))) {
+    return(list(mean_sd="NA (NA)", median_iqr="NA (NA-NA)"))
+  }
+  mean_sd <- sprintf("%.0f (%.0f)", mean(x, na.rm=TRUE), sd(x, na.rm=TRUE))
+  q <- quantile(x, c(0.25, 0.5, 0.75), na.rm=TRUE)
+  median_iqr <- sprintf("%.0f (%.0f-%.0f)", q[2], q[1], q[3])
+  return(list(mean_sd=mean_sd, median_iqr=median_iqr))
+}
+
+# Function to map location categories
+map_location <- function(bentf) {
+  case_when(
+    bentf == "< 6cm" ~ "0-5 cm",
+    bentf == "6 - 10cm" ~ ">5-10 cm",
+    bentf == ">10cm" ~ ">10 cm",
+    TRUE ~ NA_character_
+  )
+}
+
+# Function to map histology categories
+map_histology <- function(histo) {
+  case_when(
+    histo == "Adeno-Ca." ~ "Adenocarcinoma",
+    histo == "muzinöses Adeno-Ca." ~ "Mucinous adenocarcinoma",
+    histo == "Siegelringkarzinom" ~ "Signet-ring cell carcinoma",
+    histo %in% c("andere", "undifferenziertes Ca.") ~ "Other",
+    TRUE ~ NA_character_
+  )
+}
+
+# Function to map N categories
+map_n_category <- function(n_cat) {
+  case_when(
+    n_cat == "cN0" | n_cat == "negativ" ~ "cN0",
+    n_cat %in% c("cN1", "cN2", "positiv") ~ "cN1-2",
+    TRUE ~ NA_character_
+  )
+}
+
+# Function to map UICC stage
+map_uicc_stage <- function(t_stage, n_stage) {
+  n_stage_mapped <- map_n_category(n_stage)
+  case_when(
+    n_stage_mapped == "cN0" ~ "Stage II",
+    n_stage_mapped == "cN1-2" & t_stage %in% c("cT1", "cT2") ~ "cT1-2 N1-2",
+    n_stage_mapped == "cN1-2" & t_stage %in% c("cT3", "cT4") ~ "cT3-4 N1-2",
+    TRUE ~ NA_character_
+  )
+}
+
+```
+
+## Table 2
+
+## Figure 2
+
+## Table 3
+
+## Figure 3
+
+## Figure 4
+
+## Median follow-up time
+
+```{r}
+fu <- prodlim(Surv(OStime / 30.44, OSevent) ~ 1, data = CAOsurv, reverse = TRUE)
+o_fu <- quantile(fu, c(.25, .5, .75))
+```
+
+The median follow-up time is `r o_fu$[2]` months (interquartile range: `r o_fu[1]`, `r o_fu[3]`).
