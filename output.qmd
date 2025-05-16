@@ -224,29 +224,33 @@ tryCatch({
 # Add statistics to the table
   table1_data$`Investigational group (n=613)` <- stats_investigational
   table1_data$`Control group (n=623)` <- stats_control
+  
+})
 
 # Create and save the flextable
-ft <- flextable(table1_data) %>%
-  theme_vanilla() %>%
-  set_caption("Table 1: Baseline characteristics") %>%
-  add_footer_lines("Data are number of patients (%) unless otherwise stated. ECOG=Eastern Cooperative Oncology Group.") %>%
-  add_footer_lines("Table 1: Baseline characteristics") %>%  # Add title at bottom
-  align(j = 1, align = "left") %>%
-  align(j = 2:3, align = "center") %>%
-  padding(padding = 4) %>%
-  bold(i = c(1,4,7,11,16,20,26,31,36), part = "body") %>%  # Bold the main category headers
-  bold(i = 2, part = "footer") %>%  # Bold the title in footer
-  fontsize(size = 10) %>%
-  width(j = 1, width = 4) %>%
-  width(j = 2:3, width = 2) %>%
-  border(i = c(1,4,7,11,16,20,26,31,36), border.top = fp_border(color = "gray")) %>%  # Add lines before main categories
-  bg(bg = "white", part = "all") %>%  # Set background to white for all parts
-  autofit()
+# ft <- flextable(table1_data) %>%
+#   theme_vanilla() %>%
+#   set_caption("Table 1: Baseline characteristics") %>%
+#   add_footer_lines("Data are number of patients (%) unless otherwise stated. ECOG=Eastern Cooperative Oncology Group.") %>%
+#   add_footer_lines("Table 1: Baseline characteristics") %>%  # Add title at bottom
+#   align(j = 1, align = "left") %>%
+#   align(j = 2:3, align = "center") %>%
+#   padding(padding = 4) %>%
+#   bold(i = c(1,4,7,11,16,20,26,31,36), part = "body") %>%  # Bold the main category headers
+#   bold(i = 2, part = "footer") %>%  # Bold the title in footer
+#   fontsize(size = 10) %>%
+#   width(j = 1, width = 4) %>%
+#   width(j = 2:3, width = 2) %>%
+#   border(i = c(1,4,7,11,16,20,26,31,36), border.top = fp_border(color = "gray")) %>%  # Add lines before main categories
+#   bg(bg = "white", part = "all") %>%  # Set background to white for all parts
+#   autofit()
+
+knitr::kable(table1_data)
 
 # Save as png with higher resolution
-save_as_image(ft, path = "reproduced_tf/table1.png", res = 300)
+# save_as_image(ft, path = "reproduced_tf/table1.png", res = 300)
 
-print("Table has been created and saved in the reproduced_tf folder")
+# print("Table has been created and saved in the reproduced_tf folder")
 ```
 
 ## Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival
@@ -419,12 +423,10 @@ knitr::kable(results_data)
 # table2
 ```
 
-*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.  
-†Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.  
-‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.  
-Note: Cumulative locoregional recurrence calculated from database shows  `r inv_lr_cum_calculated` for investigational and `r ctrl_lr_cum_calculated` for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study.  
-
-
+\*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.\
+†Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.\
+‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.\
+Note: Cumulative locoregional recurrence calculated from database shows `r inv_lr_cum_calculated` for investigational and `r ctrl_lr_cum_calculated` for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study.
 
 ## Table 3
 
@@ -556,7 +558,6 @@ ft <- flextable::bg(ft, bg = "white", part = "footer")
 ft
 ```
 
-
 ## Figure 2
 
 ```{r figure 2 prep}
@@ -591,10 +592,7 @@ ggsurvplot(
 )
 ```
 
-
 ## Figure 3
-
-
 
 ## Figure 4
 
@@ -858,8 +856,6 @@ forestplot(results.plot, est$m, est$l, est$u, zero = 0,
            # xlog = TRUE, clip = c(-Inf, log(5)), xticks = c(.2, .5, 1, 2, 3, 4), 
            xlab = "Hazard ratio \n       Investigational arm | Control arm better")
 ```
-
-
 
 ## Median follow-up time
 
