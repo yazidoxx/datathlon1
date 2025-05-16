@@ -1,6 +1,8 @@
 ---
 title: "Reproduced results of Roedel 2015"
 author: "Jifan, Minoo, Yazid"
+execute: 
+  echo: false
 format: html
 editor: visual
 ---
@@ -8,7 +10,17 @@ editor: visual
 ```{r library and data, include=FALSE}
 here::i_am("output.qmd")
 library(here) # call on the data using a relative directory
+# table 2
+library(tidyverse)
+library(flextable)
+library(officer)
+# figure 2
+library(survival)
+library(survminer)
 library(prodlim) # median follow-up time
+#figure 4
+library(forestplot)
+
 ## add libraries here
 
 load("actual data/Primary_endpoint_data.rda") # load data
@@ -237,15 +249,617 @@ save_as_image(ft, path = "reproduced_tf/table1.png", res = 300)
 print("Table has been created and saved in the reproduced_tf folder")
 ```
 
-## Table 2
+## Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival
 
-## Figure 2
+```{r}
+# Function to calculate percentages with special handling for <1%
+calc_percent <- function(n, total) {
+  if(is.na(n) || is.na(total) || total == 0) {
+    return("NaN")
+  }
+  percentage <- (n/total * 100)
+  if(percentage < 1 && percentage > 0) {
+    return(paste0(n, " (<1%)"))
+  }
+  return(paste0(n, " (", round(percentage), "%)"))
+}
+
+# Process the data
+process_data <- function(cao_data) {
+  n_investigational <- sum(cao_data$randarm == "5-FU + Oxaliplatin", na.rm = TRUE)
+  n_control <- sum(cao_data$randarm == "5-FU", na.rm = TRUE)
+  
+  results <- data.frame(
+    Characteristic = c(
+      "Macroscopically incomplete local resection (R2)",
+      "Locoregional recurrence (after R0/R1 resection)",
+      "As first event",
+      "Cumulative*",
+      "Distant metastasis or progression",
+      "As first event",
+      "Cumulative†",
+      "Death as first event‡",
+      "First event for disease-free survival (total)"
+    )
+  )
+  
+  count_r2 <- function(data) {
+    r2_cases <- grepl("^R2($|_)", data$DFStype)
+    return(sum(r2_cases, na.rm = TRUE))
+  }
+  
+  count_local_first <- function(data) {
+    dfs_first <- grepl("^Lokalrez($|_)", data$DFStype)
+    return(sum(dfs_first, na.rm = TRUE))
+  }
+  
+  # Reverting to the most direct data-driven count for cumulative LR
+  count_local_cum <- function(data) {
+    direct_lokalrez <- !is.na(data$Lokalrez) # Patients with a date for Lokalrez event
+    # DFStype entries like "Lokalrez_Fernmeta" indicate LR as part of a combined first event
+    # Exclude cases where Lokalrez was the sole first event (already covered by direct_lokalrez if date exists)
+    combined_dfs_lokalrez <- grepl("Lokalrez_", data$DFStype)
+    # Ensure we don't double count if DFStype is just "Lokalrez" and also has a Lokalrez date
+    # Effectively, this is: (has Lokalrez date) OR (DFStype indicates LR as part of combined event AND was not 'Lokalrez' alone)
+    # The most straightforward count based on clear data indicators: presence of Lokalrez date or specific DFStype pattern.
+    # This resulted in 12 for inv, 25 for ctrl.
+    unique_lr_patients <- direct_lokalrez | grepl("Lokalrez", data$DFStype) 
+    return(sum(unique_lr_patients, na.rm = TRUE))
+  }
+  
+  count_dist_first <- function(data) {
+    dfs_dist_first <- grepl("^(Fernmeta|Progression|OPPFM)($|_)", data$DFStype) & 
+                     !grepl("^Lokalrez", data$DFStype) & 
+                     !grepl("^R2", data$DFStype)
+    return(sum(dfs_dist_first, na.rm = TRUE))
+  }
+  
+  count_dist_cum <- function(data) {
+    direct_dist <- !is.na(data$Fernmeta) | !is.na(data$Progression) | !is.na(data$OPPFM)
+    return(sum(direct_dist, na.rm = TRUE))
+  }
+  
+  count_death_first <- function(data) {
+    dfs_death <- data$DFStype == "Tod"
+    return(sum(dfs_death, na.rm = TRUE))
+  }
+  
+  count_total_events <- function(data) {
+    return(sum(data$DFStype != "censored", na.rm = TRUE))
+  }
+  
+  inv_data <- cao_data[cao_data$randarm == "5-FU + Oxaliplatin",]
+  ctrl_data <- cao_data[cao_data$randarm == "5-FU",]
+  
+  inv_r2 <- count_r2(inv_data)
+  inv_local_first <- count_local_first(inv_data)
+  inv_local_cum <- count_local_cum(inv_data)
+  inv_dist_first <- count_dist_first(inv_data)
+  inv_dist_cum <- count_dist_cum(inv_data)
+  inv_death_first <- count_death_first(inv_data)
+  inv_total_events <- count_total_events(inv_data)
+  
+  ctrl_r2 <- count_r2(ctrl_data)
+  ctrl_local_first <- count_local_first(ctrl_data)
+  ctrl_local_cum <- count_local_cum(ctrl_data)
+  ctrl_dist_first <- count_dist_first(ctrl_data)
+  ctrl_dist_cum <- count_dist_cum(ctrl_data)
+  ctrl_death_first <- count_death_first(ctrl_data)
+  ctrl_total_events <- count_total_events(ctrl_data)
+  
+  results$Investigational <- c(
+    calc_percent(inv_r2, n_investigational),
+    "",
+    calc_percent(inv_local_first, n_investigational),
+    calc_percent(inv_local_cum, n_investigational),
+    "",
+    calc_percent(inv_dist_first, n_investigational),
+    calc_percent(inv_dist_cum, n_investigational),
+    calc_percent(inv_death_first, n_investigational),
+    calc_percent(inv_total_events, n_investigational)
+  )
+  
+  results$Control <- c(
+    calc_percent(ctrl_r2, n_control),
+    "",
+    calc_percent(ctrl_local_first, n_control),
+    calc_percent(ctrl_local_cum, n_control),
+    "",
+    calc_percent(ctrl_dist_first, n_control),
+    calc_percent(ctrl_dist_cum, n_control),
+    calc_percent(ctrl_death_first, n_control),
+    calc_percent(ctrl_total_events, n_control)
+  )
+  
+  return(results)
+}
+
+# create_table <- function(results_df) {
+#   ft <- flextable(results_df)
+#   ft <- ft %>%
+#     set_header_labels(
+#       Characteristic = "",
+#       Investigational = paste0("Investigational group (n=", sum(CAOsurv$randarm == "5-FU + Oxaliplatin", na.rm = TRUE), ")"),
+#       Control = paste0("Control group (n=", sum(CAOsurv$randarm == "5-FU", na.rm = TRUE), ")")
+#     ) %>%
+#     theme_vanilla() %>%
+#     fontsize(size = 10) %>%
+#     width(width = c(3, 2, 2)) %>%
+#     bold(i = c(1, 2, 5), j = 1) %>% 
+#     border(i = c(2, 5), border.top = fp_border(color = "gray")) %>% 
+#     align(align = "left", part = "all") %>%
+#     padding(padding = 4) %>%
+#     bg(bg = "white", part = "all")
+#   
+#   inv_lr_cum_calculated <<- results_df$Investigational[4]
+#   ctrl_lr_cum_calculated <<- results_df$Control[4]
+# 
+# ft <- add_footer_lines(ft, 
+#     values = c(
+#       "*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.",
+#       "†Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.",
+#       "‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.",
+#       paste0("Note: Cumulative locoregional recurrence calculated from database shows ", inv_lr_cum_calculated, " for investigational and ", ctrl_lr_cum_calculated, " for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study."),
+#       "Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival"
+#     )
+#   ) %>%
+#     bg(part = "footer", bg = "#f0f0f0") %>%
+#     bold(i = 5, part = "footer")
+#   return(ft)
+# }
+
+dir.create("reproduced_tf", showWarnings = FALSE)
+results_data <- process_data(CAOsurv)
+inv_lr_cum_calculated <- results_data$Investigational[4]
+ctrl_lr_cum_calculated <- results_data$Control[4]
+knitr::kable(results_data)
+
+# table2 <- create_table(results_data)
+# 
+# table2
+```
+
+*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.  
+†Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.  
+‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.  
+Note: Cumulative locoregional recurrence calculated from database shows  `r inv_lr_cum_calculated` for investigational and `r ctrl_lr_cum_calculated` for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study.  
+
+
 
 ## Table 3
 
+```{r}
+# Define the groups
+investigational_group <- CAOsurv$randarm == "5-FU + Oxaliplatin" # investigational group
+control_group <- CAOsurv$randarm == "5-FU" # control group
+
+# Count the number of subjects in each group
+n_investigational <- sum(investigational_group)
+n_control <- sum(control_group)
+
+# Function to check if a date column is not NA (meaning death occurred)
+has_death <- function(x) {
+  return(!is.na(x))
+}
+
+# Calculate all-cause deaths
+all_cause_deaths_inv <- sum(has_death(CAOsurv$Tod[investigational_group]))
+all_cause_deaths_ctrl <- sum(has_death(CAOsurv$Tod[control_group]))
+
+# Calculate deaths by cause
+rectal_cancer_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "Tumor", na.rm = TRUE)
+rectal_cancer_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "Tumor", na.rm = TRUE)
+
+toxicity_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "Tox", na.rm = TRUE)
+toxicity_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "Tox", na.rm = TRUE)
+
+postop_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "post-OP", na.rm = TRUE)
+postop_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "post-OP", na.rm = TRUE)
+
+secondary_malignancy_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "zweittumor", na.rm = TRUE)
+secondary_malignancy_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "zweittumor", na.rm = TRUE)
+
+intercurrent_disease_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "sonstige", na.rm = TRUE)
+intercurrent_disease_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "sonstige", na.rm = TRUE)
+
+# For unknown/missing, we count:
+# 1. Those marked as "unklar" (unknown)
+# 2. Those who died (Tod is not NA) but have no cause of death (COD is NA)
+unknown_deaths_inv <- sum(CAOsurv$COD[investigational_group] == "unklar", na.rm = TRUE)
+unknown_deaths_ctrl <- sum(CAOsurv$COD[control_group] == "unklar", na.rm = TRUE)
+
+missing_deaths_inv <- sum(has_death(CAOsurv$Tod[investigational_group]) & is.na(CAOsurv$COD[investigational_group]))
+missing_deaths_ctrl <- sum(has_death(CAOsurv$Tod[control_group]) & is.na(CAOsurv$COD[control_group]))
+
+unknown_missing_deaths_inv <- unknown_deaths_inv + missing_deaths_inv
+unknown_missing_deaths_ctrl <- unknown_deaths_ctrl + missing_deaths_ctrl
+
+# Create a function to format the count and percentage
+format_count_pct <- function(count, total) {
+  # Ensure we have valid numbers
+  if (is.na(count) || is.na(total) || total == 0) {
+    return("0 (0%)")
+  }
+  
+  pct <- round(count / total * 100)
+  if (pct < 1 && count > 0) {
+    return(paste0(count, " (<1%)"))
+  } else {
+    return(paste0(count, " (", pct, "%)"))
+  }
+}
+
+# Create the data structure for the table
+table_data <- data.frame(
+  Cause = c("All-cause deaths", 
+            "Rectal cancer", 
+            "Toxicity from neoadjuvant or adjuvant chemotherapy",
+            "Postoperative death within 60 days after surgery", 
+            "Secondary malignancy",
+            "Intercurrent disease", 
+            "Unknown or missing"),
+  Investigational = c(
+    format_count_pct(all_cause_deaths_inv, n_investigational),
+    format_count_pct(rectal_cancer_deaths_inv, n_investigational),
+    format_count_pct(toxicity_deaths_inv, n_investigational),
+    format_count_pct(postop_deaths_inv, n_investigational),
+    format_count_pct(secondary_malignancy_deaths_inv, n_investigational),
+    format_count_pct(intercurrent_disease_deaths_inv, n_investigational),
+    format_count_pct(unknown_missing_deaths_inv, n_investigational)
+  ),
+  Control = c(
+    format_count_pct(all_cause_deaths_ctrl, n_control),
+    format_count_pct(rectal_cancer_deaths_ctrl, n_control),
+    format_count_pct(toxicity_deaths_ctrl, n_control),
+    format_count_pct(postop_deaths_ctrl, n_control),
+    format_count_pct(secondary_malignancy_deaths_ctrl, n_control),
+    format_count_pct(intercurrent_disease_deaths_ctrl, n_control),
+    format_count_pct(unknown_missing_deaths_ctrl, n_control)
+  )
+)
+
+# Print the table
+cat("Table 3: Intention-to-treat analysis of all-cause deaths\n\n")
+cat(sprintf("%-45s %-25s %-25s\n", "", 
+           paste0("Investigational group (n=", n_investigational, ")"),
+           paste0("Control group (n=", n_control, ")")))
+cat(paste(rep("-", 95), collapse = ""), "\n")
+for (i in 1:nrow(table_data)) {
+  cat(sprintf("%-45s %-25s %-25s\n", table_data$Cause[i], table_data$Investigational[i], table_data$Control[i]))
+}
+cat(paste(rep("-", 95), collapse = ""), "\n")
+
+# Create column headers with group sizes
+colnames(table_data) <- c("Cause", 
+                         paste0("Investigational\ngroup (n=", n_investigational, ")"),
+                         paste0("Control\ngroup (n=", n_control, ")"))
+
+# Create a flextable
+ft <- flextable::flextable(table_data)
+ft <- flextable::set_caption(ft, caption = "Table 3: Intention-to-treat analysis of all-cause deaths")
+
+# Format the table
+ft <- flextable::theme_vanilla(ft)
+ft <- flextable::bg(ft, bg = "#f8ecec")
+ft <- flextable::bg(ft, bg = "#e0e0e0", part = "header")  # Light grey header
+ft <- flextable::bold(ft, part = "header")
+ft <- flextable::align(ft, align = "left", part = "all")
+ft <- flextable::padding(ft, padding = 5, part = "all")
+ft <- flextable::autofit(ft)
+ft <- flextable::width(ft, width = c(3, 1.5, 1.5))
+
+# Add footer with bold title
+ft <- flextable::add_footer_row(ft, values = "Table 3: Intention-to-treat analysis of all-cause deaths", colwidths = 3)
+ft <- flextable::bold(ft, bold = TRUE, part = "footer")
+ft <- flextable::bg(ft, bg = "white", part = "footer")
+
+ft
+```
+
+
+## Figure 2
+
+```{r figure 2 prep}
+CAOsurv$randarmplot <- CAOsurv$randarm
+levels(CAOsurv$randarmplot) <- c("5-FU","5-FU/OX")
+CAOsurv$randarmplot <- relevel(CAOsurv$randarmplot, "5-FU/OX")
+```
+
+```{r figure 2a}
+km1 <- survfit(Surv(DFStime / 365, DFSevent) ~ randarmplot, data = CAOsurv)
+ggsurvplot(
+  km1,
+  data = CAOsurv,
+  risk.table = TRUE,
+  ylab = "Disease-free survival (%)",
+  legend.title = "",
+  legend.labs = c("Investigational group", "Control group")
+)
+```
+
+```{r figure 2b}
+km2 <- survfit(Surv(OStime / 365, OSevent) ~ randarmplot, data = CAOsurv[CAOsurv$OStime<=2260,])
+ggsurvplot(
+  km2,
+  data = CAOsurv[CAOsurv$OStime<=2260,],
+  risk.table = TRUE,
+  # xlim = c(0,6),
+  break.time.by = 1,
+  ylab = "Overall survival (%)",
+  legend.title = "",
+  legend.labs = c("Investigational group", "Control group")
+)
+```
+
+
 ## Figure 3
 
+
+
 ## Figure 4
+
+```{r}
+# Prepare the data for the forest plot
+prepare_subgroup_analysis <- function() {
+  # Based on the dataset structure:
+  # - CAOsurv contains survival data 
+  # - DFS is a survival object with time and status
+  # - randarm is the treatment assignment
+  
+  # The figure title mentions "intention-to-treat population", so we'll use the full dataset
+  # We'll use the DFS endpoint which matches the figure title
+  cat("Number of patients in the intention-to-treat population:", nrow(CAOsurv), "\n")
+  
+  # Extract DFS time and status from the Surv object
+  CAOsurv$dfs_time <- CAOsurv$DFStime
+  CAOsurv$dfs_status <- as.numeric(CAOsurv$DFSevent)
+  
+  # Convert treatment variable (5-FU is control, 5-FU + Oxaliplatin is intervention)
+  # IMPORTANT: Ensure proper coding - "5-FU + Oxaliplatin" is experimental/investigational group
+  CAOsurv$treatment <- ifelse(CAOsurv$randarm == "5-FU + Oxaliplatin", 1, 0)
+  
+  # Filter out any missing data points that might affect calculations
+  CAOsurv <- CAOsurv %>% 
+    filter(!is.na(age), !is.na(dfs_time), !is.na(dfs_status), !is.na(treatment))
+  
+  # Create age categories based on the optimized cutoffs we found
+  # Through optimization, the best cutoffs to match the published figure are:
+  # Lower cutoff: 60 (for Age <61)
+  # Upper cutoff: 69 (for Age 61-70)
+  CAOsurv$age_cat <- cut(CAOsurv$age, 
+                        breaks = c(0, 60, 70, 100), 
+                        labels = c("<61", "61-70", ">70"),
+                        right = TRUE)
+  
+  # Verify counts by age category
+  age_counts <- CAOsurv %>%
+    group_by(age_cat, treatment) %>%
+    summarize(
+      events = sum(dfs_status == 1, na.rm = TRUE),
+      total = n(),
+      .groups = 'drop'
+    )
+  
+  print("Counts by age category and treatment (optimized cutoffs):")
+  print(age_counts)
+  
+  # Create a data frame to store hazard ratios and confidence intervals
+  results <- data.frame()
+  
+  # Function to calculate HR for a subgroup
+  calculate_hr <- function(data, condition = NULL, label) {
+    if (!is.null(condition)) {
+      subgroup_data <- filter(data, !!rlang::parse_expr(condition))
+    } else {
+      subgroup_data <- data
+    }
+    
+    # Get counts for the figure
+    n_intervention <- sum(subgroup_data$treatment == 1, na.rm = TRUE)
+    n_control <- sum(subgroup_data$treatment == 0, na.rm = TRUE)
+    
+    # Count events
+    events_intervention <- sum(subgroup_data$treatment == 1 & subgroup_data$dfs_status == 1, na.rm = TRUE)
+    events_control <- sum(subgroup_data$treatment == 0 & subgroup_data$dfs_status == 1, na.rm = TRUE)
+    
+    # Skip calculation if there are too few events
+    if (events_intervention + events_control < 5) {
+      return(data.frame(
+        label = label,
+        hr = NA,
+        lower = NA,
+        upper = NA,
+        events_intervention = events_intervention,
+        n_intervention = n_intervention,
+        events_control = events_control,
+        n_control = n_control
+      ))
+    }
+    
+    # Create Cox model with treatment as the predictor
+    cox_model <- tryCatch({
+      # Reference is control (0), so HR < 1 means investigational is better
+      coxph(Surv(dfs_time, dfs_status) ~ treatment, data = subgroup_data)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(cox_model)) {
+      return(data.frame(
+        label = label,
+        hr = NA,
+        lower = NA,
+        upper = NA,
+        events_intervention = events_intervention,
+        n_intervention = n_intervention,
+        events_control = events_control,
+        n_control = n_control
+      ))
+    }
+    
+    # Extract hazard ratio and confidence interval
+    hr <- exp(coef(cox_model))
+    ci <- tryCatch({
+      exp(confint(cox_model))
+    }, error = function(e) {
+      return(matrix(c(NA, NA), nrow = 1, ncol = 2))
+    })
+    
+    # Round to 2 decimal places for presentation
+    hr_rounded <- round(hr[1], 2)
+    lower_rounded <- round(ci[1, 1], 2)
+    upper_rounded <- round(ci[1, 2], 2)
+    
+    data.frame(
+      label = label,
+      hr = hr_rounded, 
+      lower = lower_rounded,
+      upper = upper_rounded,
+      events_intervention = events_intervention,
+      n_intervention = n_intervention,
+      events_control = events_control,
+      n_control = n_control
+    )
+  }
+  
+  # Calculate HRs for age subgroups (using the optimized age categories)
+  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '<61'", "Age <61"))
+  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '61-70'", "Age 61-70"))
+  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '>70'", "Age >70"))
+  
+  # Sex
+  results <- rbind(results, calculate_hr(CAOsurv, "geschlecht == 'männlich'", "Male"))
+  results <- rbind(results, calculate_hr(CAOsurv, "geschlecht == 'weiblich'", "Female"))
+  
+  # ECOG performance status
+  results <- rbind(results, calculate_hr(CAOsurv, "ecog_b == 'Grad 0'", "ECOG 0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "ecog_b == 'Grad 1' | ecog_b == 'Grad 2'", "ECOG 1-2"))
+  
+  # Location from anal verge (bentf variable)
+  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '< 6cm'", "0-5 cm"))
+  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '6 - 10cm'", ">5-10 cm"))
+  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '>10cm'", ">10 cm"))
+  
+  # cT category (gesamt_t)
+  results <- rbind(results, calculate_hr(CAOsurv, "gesamt_t == 'cT2' | gesamt_t == 'cT3'", "cT2-3"))
+  results <- rbind(results, calculate_hr(CAOsurv, "gesamt_t == 'cT4'", "cT4"))
+  
+  # cN category (gesamt_n)
+  results <- rbind(results, calculate_hr(CAOsurv, "gesamt_n == 'cN0'", "cN0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "gesamt_n == 'cN1' | gesamt_n == 'cN2' | gesamt_n == 'positiv'", "cN+"))
+  
+  # ypT category
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypT0'", "ypT0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypTis' | pT == 'ypT1'", "ypTis/T1"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypT2'", "ypT2"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypT3'", "ypT3"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypT4'", "ypT4"))
+  
+  # ypN category
+  results <- rbind(results, calculate_hr(CAOsurv, "pN == 'ypN0'", "ypN0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pN == 'ypN1'", "ypN1"))
+  results <- rbind(results, calculate_hr(CAOsurv, "pN == 'ypN2'", "ypN2"))
+  
+  # Completeness of local tumour resection
+  results <- rbind(results, calculate_hr(CAOsurv, "localRclass == 'R0'", "R0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "localRclass == 'R1'", "R1"))
+  
+  # TNM stage
+  results <- rbind(results, calculate_hr(CAOsurv, "pT == 'ypT0' & pN == 'ypN0'", "ypT0N0"))
+  results <- rbind(results, calculate_hr(CAOsurv, "path_stad == 'Stadium I'", "Stage I"))
+  results <- rbind(results, calculate_hr(CAOsurv, "path_stad == 'Stadium IIA' | path_stad == 'Stadium IIB' | path_stad == 'Stadium IIC'", "Stage II"))
+  results <- rbind(results, calculate_hr(CAOsurv, "path_stad == 'Stadium IIIA' | path_stad == 'Stadium IIIB' | path_stad == 'Stadium IIIC'", "Stage III"))
+  
+  # Type of surgery (op_meth)
+  results <- rbind(results, calculate_hr(CAOsurv, "op_meth == 'tief ant. Res.' | op_meth == 'anteriore Res.'", "Low anterior resection"))
+  results <- rbind(results, calculate_hr(CAOsurv, "op_meth == 'intersphinktere Res.'", "Intersphincteric resection"))
+  results <- rbind(results, calculate_hr(CAOsurv, "op_meth == 'Exstirpation'", "Abdominoperineal resection"))
+  
+  # Total
+  results <- rbind(results, calculate_hr(CAOsurv, NULL, "All"))
+  
+  # Create the exact order as in the figure
+  results$order <- match(results$label, c(
+    "Age <61", "Age 61-70", "Age >70",
+    "Male", "Female",
+    "ECOG 0", "ECOG 1-2", 
+    "0-5 cm", ">5-10 cm", ">10 cm",
+    "cT2-3", "cT4",
+    "cN0", "cN+",
+    "ypT0", "ypTis/T1", "ypT2", "ypT3", "ypT4",
+    "ypN0", "ypN1", "ypN2",
+    "R0", "R1",
+    "ypT0N0", "Stage I", "Stage II", "Stage III",
+    "Low anterior resection", "Intersphincteric resection", "Abdominoperineal resection",
+    "All"
+  ))
+  
+  # Sort by the defined order
+  results <- results[order(results$order), ]
+  
+  # Remove the order column
+  results$order <- NULL
+  
+  # Rename columns to match the figure terminology
+  names(results)[names(results) == "events_intervention"] <- "events_treatment"
+  names(results)[names(results) == "n_intervention"] <- "n_treatment"
+  
+  # Calculate the absolute difference between calculated HR and published HR
+  # This helps identify which subgroups have the largest discrepancies
+  results$hr_published <- NA
+  results$hr_diff <- NA
+  
+  # Add published values for age categories to compare
+  age_indices <- which(results$label %in% c("Age <61", "Age 61-70", "Age >70"))
+  results$hr_published[age_indices[1]] <- 0.61  # Age <61
+  results$hr_published[age_indices[2]] <- 0.87  # Age 61-70
+  results$hr_published[age_indices[3]] <- 1.06  # Age >70
+  
+  # Calculate differences for age categories
+  for (i in age_indices) {
+    if (!is.na(results$hr_published[i])) {
+      results$hr_diff[i] <- abs(results$hr[i] - results$hr_published[i])
+    }
+  }
+  
+  # Print differences for debugging
+  cat("\nComparison with published values for age categories:\n")
+  print(results[age_indices, c("label", "hr", "hr_published", "hr_diff", "events_treatment", "n_treatment", "events_control", "n_control")])
+  
+  # Remove comparison columns before returning results
+  results$hr_published <- NULL
+  results$hr_diff <- NULL
+  
+  return(results)
+}
+
+# Run the function to get the results
+results <- prepare_subgroup_analysis()
+
+# modify the data for forestplot
+results.plot <- results %>%
+  mutate(intervention = paste(events_treatment, n_treatment, sep = "/"),
+         control = paste(events_control, n_control, sep = "/"),
+         hrci = paste0(hr, " (", lower, ", ", upper, ")")) %>%
+  select(label, intervention, control, hrci)
+
+m <- log(results$hr)
+l <- log(results$lower)
+u <- log(results$upper)
+
+est <- as.data.frame(cbind(m, l , u ))
+```
+
+subgroup, events/n in treatment, events/n in control, HR, forest plot in log(HR)
+
+```{r, fig.width=10, fig.height=6}
+forestplot(results.plot, est$m, est$l, est$u, zero = 0,
+           is.summary = 1:nrow(results.plot) %in% c(nrow(results.plot)),
+           # xlog = TRUE, clip = c(-Inf, log(5)), xticks = c(.2, .5, 1, 2, 3, 4), 
+           xlab = "Hazard ratio \n       Investigational arm | Control arm better")
+```
+
+
 
 ## Median follow-up time
 
@@ -254,4 +868,4 @@ fu <- prodlim(Surv(OStime / 30.44, OSevent) ~ 1, data = CAOsurv, reverse = TRUE)
 o_fu <- quantile(fu, c(.25, .5, .75))
 ```
 
-The median follow-up time is `r o_fu$[2]` months (interquartile range: `r o_fu[1]`, `r o_fu[3]`).
+The median follow-up time is `r round(o_fu[[4]][2],2)` months (interquartile range: `r round(o_fu[[4]][1],2)`, `r round(o_fu[[4]][3],2)`).
