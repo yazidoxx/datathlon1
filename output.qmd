@@ -14,6 +14,8 @@ library(here) # call on the data using a relative directory
 library(tidyverse)
 library(flextable)
 library(officer)
+# figure 1
+library(consort)
 # figure 2
 library(survival)
 library(survminer)
@@ -556,6 +558,51 @@ ft <- flextable::bold(ft, bold = TRUE, part = "footer")
 ft <- flextable::bg(ft, bg = "white", part = "footer")
 
 ft
+```
+
+## Figure 1
+
+A few numbers don't match with the consort diagram.
+
+```{r data prep fig1}
+df.fig1 <- CONSORT %>%
+  mutate(n_start = patnr, # major steps require patient ID
+         preop = case_when(praeop_th == "Arm gewechselt" ~ "Switched arm", TRUE ~ NA_character_), # exclusion steps require exclusion reasons
+         n_preop = case_when(is.na(preop) ~ patnr, TRUE ~ NA),
+         nosurg = case_when(surgery == "NA" ~ "Missing data",
+                            surgery == "vor OP ausgeschlossen" ~  "Excluded before surgery",
+                            surgery == "Progress vor der OP" ~ "Pregression before surgery",
+                            surgery == "OP verweigert" ~ "Surgery refused",
+                            surgery == "Toxizität" ~ "Toxicity",
+                            surgery == "Tod" ~ "Death",
+                            TRUE ~ NA_character_),
+         n_surg = case_when(is.na(nosurg) ~ patnr, TRUE ~ NA),
+         adj_chemo = case_when(is.na(postop_th) ~ "Missing data",
+                               surgery == "OP durchgeführt" & postop_th == "keine Therapie" ~ "No treatment",
+                               postop_th =="vor Therapie abgebrochen" ~ "Discontinued before treatment",
+                               TRUE ~ NA_character_),
+         n_adj_chemo = case_when(is.na(adj_chemo) ~ patnr, TRUE ~ NA),
+         switch_chemo = case_when(surgery == "OP durchgeführt" & postop_th == "Arm gewechselt" ~ "Switched arm",
+                                  surgery == "OP durchgeführt" & postop_th == "andere Therapie" ~ "Other treatment",
+                                  TRUE ~ NA_character_),
+         n_adj_chemo_rnd = case_when(is.na(switch_chemo) ~ patnr, TRUE ~ NA),
+         randarm = factor(as.character(rand_arm), levels = c("5-FU + Oxaliplatin", "5-FU"))) %>%
+  select(n_start:randarm)
+```
+
+```{r, fig.height=8, fig.width=9}
+consort_plot(data = df.fig1,
+                  orders = c(n_start = "randomization",
+                             randarm = "Randomized patient",
+                             nosurg  = "Did not have surgery",
+                             n_surg  = "Surgery",
+                             adj_chemo    = "Did not have adjuvant chemotherapy",
+                             n_adj_chemo  = "Started adjuvant chemotherapy",
+                             switch_chemo = "Change during adjuvant chemotherapy",
+                             n_adj_chemo_rnd = "Received as randomized"),
+                  side_box = c("nosurg", "adj_chemo", "switch_chemo"),
+                  allocation = "randarm",
+                  cex = 0.7)
 ```
 
 ## Figure 2
