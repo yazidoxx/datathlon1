@@ -8,10 +8,10 @@ editor: visual
 ---
 
 ```{r library and data, include=FALSE}
-here::i_am("output.qmd")
+# here::i_am("output.qmd") # doesn't work on the old `here`
 library(here) # call on the data using a relative directory
 # table 2
-library(tidyverse)
+library(dplyr)
 library(flextable)
 library(officer)
 # figure 1
@@ -30,7 +30,15 @@ load("actual data/Primary_endpoint_data.rda") # load data
 
 ## Introduction
 
-This page is to reproduce the tables and figures from the Roedel et al. 2015.
+This page is to reproduce the tables and figures from the Roedel et al. 2015 following our statistical analysis plan (SAP).
+
+## Session information
+
+We ran the code under below environment setting.
+
+```{r}
+sessionInfo()
+```
 
 ## Table 1
 
