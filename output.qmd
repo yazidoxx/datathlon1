@@ -30,7 +30,37 @@ load("actual data/Primary_endpoint_data.rda") # load data
 
 ## Introduction
 
-This page is to reproduce the tables and figures from the Roedel et al. 2015 following our statistical analysis plan (SAP).
+In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in Rödel et al. (2015), including:
+
+-   **Table 1**, Baseline Characteristics and Demographics:
+
+    -   Patient demographics and disease characteristics by treatment arm
+
+    -   Stratification factors
+
+    -   Prior treatments and medical history
+
+-   **Table 2**, Efficacy table of Intention-to-treat analysis of first events for primary endpoint disease-free survival (DFS)
+
+-   **Table 3**, Efficacy table of intention-to-treat analysis of all-cause deaths
+
+-   **Figure 1**, Trial profile which is a CONSORT diagram showing the number of patients throughout the study
+
+-   **Figure 2**
+
+    -   Panel A, Kaplan-Meier curves for DFS
+
+    -   Panel B, Kaplan-Meier curves for overall survival (OS)
+
+-   **Figure 3**
+
+    -   Panel A, Cumulative incidence curves for locoregional recurrence
+
+    -   Panel B, Cumulative incidence curves for distant metastases
+
+-   **Figure 4**, Forest plot including Hazard Ratios (HR) for DFS in predefined subgroups
+
+Due to having missing data within variables in the given data, we could not reproduce the cumulative locoregional recurrence.
 
 ## Session information
 
@@ -40,7 +70,7 @@ We ran the code under below environment setting.
 sessionInfo()
 ```
 
-## Table 1
+## Table 1: Baseline characteristics
 
 ```{r functions for table 1}
 # Function to calculate percentages
@@ -438,7 +468,7 @@ knitr::kable(results_data)
 ‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.\
 Note: Cumulative locoregional recurrence calculated from database shows `r inv_lr_cum_calculated` for investigational and `r ctrl_lr_cum_calculated` for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study.
 
-## Table 3
+## Table 3: Intention-to-treat analysis of all-cause deaths
 
 ```{r}
 # Define the groups
@@ -568,7 +598,7 @@ ft <- flextable::bg(ft, bg = "white", part = "footer")
 ft
 ```
 
-## Figure 1
+## Figure 1: Trial profile
 
 A few numbers don't match with the consort diagram.
 
