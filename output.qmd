@@ -30,7 +30,15 @@ load("actual data/Primary_endpoint_data.rda") # load data
 
 ## Introduction
 
-In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in Rödel et al. (2015), including:
+In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in Rödel et al. (2015). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
+
+### Objectives
+
+The primary objective was to evaluate whether adding oxaliplatin improves disease-free survival (DFS).
+
+Secondary trial objectives are to evaluate the efficacy of additional oxaliplatin to the standard regimen on overall survival and incidence of local and distant recurrences.
+
+### Tables and Figures to reproduce:
 
 -   **Table 1**, Baseline Characteristics and Demographics:
 
@@ -60,7 +68,7 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 -   **Figure 4**, Forest plot including Hazard Ratios (HR) for DFS in predefined subgroups
 
-Due to having missing data within variables in the given data, we could not reproduce the cumulative locoregional recurrence.
+Note: Due to having missing data within variables in the provided data, we could not reproduce the cumulative locoregional recurrence (Figure 3, Panel A) and there are discrepancies in Table2.
 
 ## Session information
 
@@ -71,6 +79,18 @@ sessionInfo()
 ```
 
 ## Table 1: Baseline characteristics
+
+In Table 1, we report the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only). We calculated:
+
+-   the mean and standard deviation of age,
+
+-   the median and interquartile range for age,
+
+-   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
+
+These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
+
+**The table structure matches the original publication and we fully reproduced Table 1 exactly as reported in Rödel et al. (2015)**
 
 ```{r functions for table 1}
 # Function to calculate percentages
@@ -294,6 +314,20 @@ knitr::kable(table1_data)
 ```
 
 ## Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival
+
+In Table 2, we report the distribution of first events contributing to the primary endpoint: DFS. We counted the number of:
+
+-   Macroscopically incomplete local resections (R2)
+-   Locoregional recurrences as first events
+-   Cumulative locoregional recurrences
+-   Distant metastasis or progression as first events
+-   Cumulative distant metastases
+-   Deaths as first events
+-   Total first events for DFS
+
+Counts were computed by directly classifying the DFStype variable and by checking event dates in the relevant variables. Percentages were calculated within each treatment arm relative to the total number of patients in that arm.
+
+**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper.**
 
 ```{r}
 # Function to calculate percentages with special handling for <1%
