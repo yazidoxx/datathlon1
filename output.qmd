@@ -34,9 +34,13 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 ### Objectives
 
-The primary objective was to evaluate whether adding oxaliplatin improves disease-free survival (DFS).
+**The primary objective** was to evaluate whether adding oxaliplatin improves disease-free survival (DFS). 
+The  DFS  is  defined  as  the  time  from randomization to the first occurrence of non-radical surgery of the primary tumour (R2 resection), 
+locoregional  recurrence  after  R0/1  resection  of  the  primary tumour,  metastatic  disease  or progression,  or  death  from  any  cause,  whichever  occurred  first.  Second  non-colorectal malignancies were disregarded in the analyses of disease-free survival.
 
-Secondary trial objectives were to evaluate the efficacy of additional oxaliplatin to the standard regimen on overall survival and incidence of local and distant recurrences.
+**Secondary trial objectives** were to evaluate the efficacy of additional oxaliplatin to the standard regimen on:
+  - overall survival which is defined as time from randomisation to death from any cause
+  - incidence of local and distant recurrences which is defined as the time between randomization and occurrence of any locoregional and distant recurrence, respectively, irrespective of whether this was a first event or not. 
 
 ### Tables and Figures to reproduce:
 
@@ -89,8 +93,6 @@ In Table 1, we report the baseline demographics and clinical characteristics for
 -   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
 
 These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
-
-**The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
 
 ```{r functions for table 1}
 # Function to calculate percentages
@@ -313,6 +315,8 @@ knitr::kable(table1_data)
 # print("Table has been created and saved in the reproduced_tf folder")
 ```
 
+**The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
+
 ## Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival
 
 In Table 2, we report the distribution of first events contributing to the primary endpoint: DFS. We counted the number of:
@@ -326,8 +330,6 @@ In Table 2, we report the distribution of first events contributing to the prima
 -   Total first events for DFS
 
 Counts were computed by directly classifying the DFStype variable and by checking event dates in the relevant variables. Percentages were calculated within each treatment arm relative to the total number of patients in that arm.
-
-**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper.**
 
 ```{r}
 # Function to calculate percentages with special handling for <1%
@@ -497,6 +499,8 @@ knitr::kable(results_data)
 # table2
 ```
 
+**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper.**
+
 \*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.\
 †Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.\
 ‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.\
@@ -647,7 +651,7 @@ ft
 
 ## Figure 1: Trial profile
 
-A few numbers don't match with the consort diagram.
+We visualized the CONSORT diagram (trial profile) as presented in the original publication with some minor differences. Our version includes the main patient flow: the total number of randomized patients, the allocation to the investigational group (5-FU + Oxaliplatin) and the control group (5-FU), the number of patients who did not undergo surgery with detailed reasons (death, progression before surgery, toxicity, surgery refusal, missing data), the number of patients who did not receive adjuvant chemotherapy with reasons, changes during adjuvant chemotherapy (switched arm or other treatment), and the final number who received treatment as randomized.
 
 ```{r data prep fig1}
 df.fig1 <- CONSORT %>%
@@ -674,6 +678,12 @@ df.fig1 <- CONSORT %>%
          randarm = factor(as.character(rand_arm), levels = c("5-FU + Oxaliplatin", "5-FU"))) %>%
   select(n_start:randarm)
 ```
+
+The main patient counts are similar to the original figure: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery. 
+
+However, some numbers do not match with the original consort diagram.  The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).
+
+Although this diagram shows how many patients stayed in their assigned group and completed each treatment step, all our analyses were performed according to the intention-to-treat (ITT) principle, and the ITT counts match the original trial exactly.
 
 ```{r, fig.height=8, fig.width=9}
 consort_plot(data = df.fig1,
