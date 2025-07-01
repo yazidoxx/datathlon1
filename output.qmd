@@ -16,7 +16,7 @@ library(flextable)
 library(officer)
 # figure 1
 library(consort)
-# figure 2
+# figure 2 & 3
 library(survival)
 library(survminer)
 library(prodlim) # median follow-up time
@@ -30,7 +30,7 @@ load("actual data/Primary_endpoint_data.rda") # load data
 
 ## Introduction
 
-In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in Rödel et al. (2015). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
+In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in [Rödel et al. (2015)](http://dx.doi.org/10.1016/S1470-2045(15)00159-X). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
 
 ### Objectives
 
@@ -79,18 +79,6 @@ sessionInfo()
 ```
 
 ## Table 1: Baseline characteristics
-
-In Table 1, we report the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only). We calculated:
-
--   the mean and standard deviation of age,
-
--   the median and interquartile range for age,
-
--   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
-
-These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
-
-**The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
 
 ```{r functions for table 1}
 # Function to calculate percentages
@@ -305,13 +293,33 @@ tryCatch({
 #   bg(bg = "white", part = "all") %>%  # Set background to white for all parts
 #   autofit()
 
+
+```
+
+```{r}
+#| label: tbl-table1
+#| tbl-cap: Baseline characteristics
+
 knitr::kable(table1_data)
 
 # Save as png with higher resolution
 # save_as_image(ft, path = "reproduced_tf/table1.png", res = 300)
 
 # print("Table has been created and saved in the reproduced_tf folder")
+
 ```
+
+In @tbl-table1, we report the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only). We calculated:
+
+-   the mean and standard deviation of age,
+
+-   the median and interquartile range for age,
+
+-   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
+
+These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
+
+**The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
 
 ## Table 2: Intention-to-treat analysis of first events for primary endpoint disease-free survival
 
@@ -725,6 +733,59 @@ ggsurvplot(
 ```
 
 ## Figure 3
+
+```{r}
+df.fig3 <- CAOsurv %>%
+  mutate(LRplot = case_when(LRtype == "Tod" ~ 0,
+                             LRtype == "censored" ~ 0,
+                             is.na(LRtype) ~ NA_real_,
+                             TRUE ~ 1),
+         DRcausesp = case_when(is.na(DRtype) ~ NA_real_,
+                                grepl("Fernmeta|Fernmeta_Progression|OPPFM|Progression|Progression_OPPFM", DRtype) ~ 1,
+                                TRUE ~ 0),
+         DRcmptrsk = case_when(DRtype == "Tod" ~ 2,                                       # who didn't have distant recurrence but died
+                               grepl("censored", DRtype) ~ 0,
+                               TRUE ~ 1),
+         DRplot = case_when(DRtype == "Tod" ~ 0,                                       # who didn't have distant recurrence but died
+                               grepl("censored", DRtype) ~ 0,
+                               TRUE ~ 1))
+```
+
+We do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. –Or we should do that too, and say it's not reproducible?
+
+```{r fig 3a}
+# Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
+
+km3 <- survfit(Surv(LRtime/365, LRplot) ~ randarm, data = df.fig3)
+ggsurvplot(
+  km3,
+  data = df.fig3,
+  fun = "cumhaz",
+  risk.table = TRUE,
+  censor = FALSE,
+  break.time.by = 1,
+  break.y.by = 0.05,
+  ylab = "Cumulative incidecne of locoregional recurrence",
+  legend.title = "",
+  legend.labs = c("Investigational group", "Control group")
+)
+```
+
+```{r fig 3b}
+km4 <- survfit(Surv(DRtime / 365, DRplot) ~ randarm, data = df.fig3)
+ggsurvplot(
+  km4,
+  data = df.fig3,
+  fun = "cumhaz",
+  risk.table = TRUE,
+  censor = FALSE,
+  break.time.by = 1,
+  break.y.by = 0.05,
+  ylab = "Cumulative incidecne of distant recurrence",
+  legend.title = "",
+  legend.labs = c("Investigational group", "Control group")
+)
+```
 
 ## Figure 4
 
