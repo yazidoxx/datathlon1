@@ -68,8 +68,6 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 -   **Figure 4**, Forest plot including Hazard Ratios (HR) for DFS in predefined subgroups
 
-Note: Due to having missing data within variables in the provided data, we could not reproduce the cumulative locoregional recurrence results (Figure 3, Panel A) and there are discrepancies in Table2 for cumulative locoregional recurrence.
-
 ## Session information
 
 We ran the code under below environment setting.
@@ -683,12 +681,6 @@ df.fig1 <- CONSORT %>%
   select(n_start:randarm)
 ```
 
-The main patient counts are similar to the original figure: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
-
-However, some numbers do not match with the original consort diagram. The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).
-
-Although this diagram shows how many patients stayed in their assigned group and completed each treatment step, all our analyses were performed according to the intention-to-treat (ITT) principle, and the ITT counts match the original trial exactly.
-
 ```{r, fig.height=8, fig.width=9}
 consort_plot(data = df.fig1,
                   orders = c(n_start = "randomization",
@@ -704,7 +696,15 @@ consort_plot(data = df.fig1,
                   cex = 0.7)
 ```
 
+The main patient counts are similar to the original figure: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
+
+However, some numbers do not match with the original consort diagram. The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).
+
+Regardless of how many patients remained in their assigned group and completed each treatment step, we conducted all analyses according to the intention-to-treat (ITT) principle, and the ITT counts are identical to those in the original trial.
+
 ## Figure 2
+
+In Figure 2, we presented the survival outcomes for patients by treatment group, using Kaplan–Meier estimates. 
 
 ```{r figure 2 prep}
 CAOsurv$randarmplot <- CAOsurv$randarm
@@ -712,6 +712,7 @@ levels(CAOsurv$randarmplot) <- c("5-FU","5-FU/OX")
 CAOsurv$randarmplot <- relevel(CAOsurv$randarmplot, "5-FU/OX")
 ```
 
+In the first panel, we reproduced the Kaplan–Meier curve for the primary endpoint, DFS, by treatment group.
 ```{r figure 2a}
 km1 <- survfit(Surv(DFStime / 365, DFSevent) ~ randarmplot, data = CAOsurv)
 ggsurvplot(
@@ -723,6 +724,10 @@ ggsurvplot(
   legend.labs = c("Investigational group", "Control group")
 )
 ```
+
+The reproduced curve and risk table are identical to the original ones in the pulished paper.
+
+In the second panel, we presented the Kaplan–Meier curve for overall survival by treatment group.
 
 ```{r figure 2b}
 km2 <- survfit(Surv(OStime / 365, OSevent) ~ randarmplot, data = CAOsurv[CAOsurv$OStime<=2260,])
@@ -737,6 +742,8 @@ ggsurvplot(
   legend.labs = c("Investigational group", "Control group")
 )
 ```
+
+The overall shape of the overall survival curve and risk table are quite similar to the original figure. However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).
 
 ## Figure 3
 
