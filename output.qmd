@@ -1,14 +1,18 @@
 ---
 title: "Reproduced results of Roedel 2015"
-author: "Jifan, Minoo, Yazid"
+author: "Jifan Wang, Yazid Zalai, Minoo Matbouriahi"
+date: today
+date-format: medium
 execute: 
   echo: false
 format: html
+toc: true
+code-fold: true
 editor: visual
 ---
 
 ```{r library and data, include=FALSE}
-# here::i_am("output.qmd") # doesn't work on the old `here`
+here::i_am("output.qmd") # doesn't work on the old `here`
 library(here) # call on the data using a relative directory
 # table 2
 library(dplyr)
@@ -20,8 +24,9 @@ library(consort)
 library(survival)
 library(survminer)
 library(prodlim) # median follow-up time
-#figure 4
+# figure 4
 library(forestplot)
+# additional analysis
 
 ## add libraries here
 
@@ -32,11 +37,20 @@ load("actual data/Primary_endpoint_data.rda") # load data
 
 In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in [Rödel et al. (2015)](http://dx.doi.org/10.1016/S1470-2045(15)00159-X). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
 
+```{r}
+fu <- prodlim(Surv(OStime / 30.44, OSevent) ~ 1, data = CAOsurv, reverse = TRUE)
+o_fu <- quantile(fu, c(.25, .5, .75))
+```
+
+The median follow-up time of this study is `r round(o_fu[[4]][2],2)` months (interquartile range: `r round(o_fu[[4]][1],2)`, `r round(o_fu[[4]][3],2)`).
+
 ### Objectives
 
 **The primary objective** was to evaluate whether adding oxaliplatin improves disease-free survival (DFS). The DFS is defined as the time from randomization to the first occurrence of non-radical surgery of the primary tumour (R2 resection), locoregional recurrence after R0/1 resection of the primary tumour, metastatic disease or progression, or death from any cause, whichever occurred first. Second non-colorectal malignancies were disregarded in the analyses of disease-free survival.
 
-**Secondary trial objectives** were to evaluate the efficacy of additional oxaliplatin to the standard regimen on: - overall survival which is defined as time from randomisation to death from any cause - incidence of local and distant recurrences which is defined as the time between randomization and occurrence of any locoregional and distant recurrence, respectively, irrespective of whether this was a first event or not.
+**Secondary trial objectives** were to evaluate the efficacy of additional oxaliplatin to the standard regimen on: 1) overall survival which is defined as time from randomisation to death from any cause and 2) incidence of local and distant recurrences which is defined as the time between randomization and occurrence of any locoregional and distant recurrence, respectively, irrespective of whether this was a first event or not.
+
+\[\[additional analysis\]\]
 
 ### Tables and Figures to reproduce:
 
@@ -68,7 +82,7 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 -   **Figure 4**, Forest plot including Hazard Ratios (HR) for DFS in predefined subgroups
 
-## Session information
+### Session Information
 
 We ran the code under below environment setting.
 
@@ -494,19 +508,26 @@ dir.create("reproduced_tf", showWarnings = FALSE)
 results_data <- process_data(CAOsurv)
 inv_lr_cum_calculated <- results_data$Investigational[4]
 ctrl_lr_cum_calculated <- results_data$Control[4]
-knitr::kable(results_data)
+
 
 # table2 <- create_table(results_data)
 # 
 # table2
 ```
 
+```{r}
+#| label: tbl-table2
+#| tbl-cap: Intention-to-treat analysis of first events for primary endpoint disease-free survival
+
+knitr::kable(results_data)
+
+```
+
 \*Includes locoregional recurrence as first event and those occurring together with or after occurrence of distant metastases.\
 †Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.\
 ‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.\
-Note: Cumulative locoregional recurrence calculated from database shows `r inv_lr_cum_calculated` for investigational and `r ctrl_lr_cum_calculated` for control group, vs. 18 (3%) and 38 (6%) in published table. Discrepancy likely due to additional clinical review in original study.
 
-**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper.**
+**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper. We suspect that the discrepancy is likely due to additional clinical review in original study.**
 
 ## Table 3: Intention-to-treat analysis of all-cause deaths
 
@@ -646,7 +667,14 @@ ft <- flextable::add_footer_row(ft, values = "Table 3: Intention-to-treat analys
 ft <- flextable::bold(ft, bold = TRUE, part = "footer")
 ft <- flextable::bg(ft, bg = "white", part = "footer")
 
+```
+
+```{r}
+#| label: tbl-table3
+#| tbl-cap: Intention-to-treat analysis of all-cause deaths
+
 ft
+
 ```
 
 **We could reproduce the counts and percentages for all-cause deaths and specific causes exactly as reported in the original Table 3 for both the investigational and control groups.**
@@ -682,6 +710,10 @@ df.fig1 <- CONSORT %>%
 ```
 
 ```{r, fig.height=8, fig.width=9}
+#| label: fig-1
+#| fig-cap: CONSORT diagram
+
+
 consort_plot(data = df.fig1,
                   orders = c(n_start = "randomization",
                              randarm = "Randomized patient",
@@ -704,16 +736,21 @@ Regardless of how many patients remained in their assigned group and completed e
 
 ## Figure 2
 
-In Figure 2, we presented the survival outcomes for patients by treatment group, using Kaplan–Meier estimates. 
+In Figure 2, we presented the survival outcomes for patients by treatment group, using Kaplan–Meier estimates.
 
-```{r figure 2 prep}
+```{r figure2prep}
 CAOsurv$randarmplot <- CAOsurv$randarm
 levels(CAOsurv$randarmplot) <- c("5-FU","5-FU/OX")
 CAOsurv$randarmplot <- relevel(CAOsurv$randarmplot, "5-FU/OX")
 ```
 
 In the first panel, we reproduced the Kaplan–Meier curve for the primary endpoint, DFS, by treatment group.
-```{r figure 2a}
+
+```{r}
+#| label: fig-2a
+#| fig-cap: Disease-free survival in the intention-to-treat population
+
+
 km1 <- survfit(Surv(DFStime / 365, DFSevent) ~ randarmplot, data = CAOsurv)
 ggsurvplot(
   km1,
@@ -725,11 +762,15 @@ ggsurvplot(
 )
 ```
 
-The reproduced curve and risk table are identical to the original ones in the pulished paper.
+The reproduced curve and risk table are identical to the original ones in the published paper.
 
 In the second panel, we presented the Kaplan–Meier curve for overall survival by treatment group.
 
-```{r figure 2b}
+```{r}
+#| label: fig-2b
+#| fig-cap: Overall survival in the intention-to-treat population
+
+
 km2 <- survfit(Surv(OStime / 365, OSevent) ~ randarmplot, data = CAOsurv[CAOsurv$OStime<=2260,])
 ggsurvplot(
   km2,
@@ -756,17 +797,21 @@ df.fig3 <- CAOsurv %>%
          DRcausesp = case_when(is.na(DRtype) ~ NA_real_,
                                 grepl("Fernmeta|Fernmeta_Progression|OPPFM|Progression|Progression_OPPFM", DRtype) ~ 1,
                                 TRUE ~ 0),
-         DRcmptrsk = case_when(DRtype == "Tod" ~ 2,                                       # who didn't have distant recurrence but died
+         DRcmptrsk = case_when(DRtype == "Tod" ~ 2, # who didn't have distant recurrence but died
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1),
-         DRplot = case_when(DRtype == "Tod" ~ 0,                                       # who didn't have distant recurrence but died
+         DRplot = case_when(DRtype == "Tod" ~ 0, # who didn't have distant recurrence but died
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1))
 ```
 
 We do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. –Or we should do that too, and say it's not reproducible?
 
-```{r fig 3a}
+```{r}
+#| label: fig-3a
+#| fig-cap: Cumulative incidence of locoregional recurrences in the intention-to-treat population
+
+
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
 km3 <- survfit(Surv(LRtime/365, LRplot) ~ randarm, data = df.fig3)
@@ -784,7 +829,11 @@ ggsurvplot(
 )
 ```
 
-```{r fig 3b}
+```{r}
+#| label: fig-3b
+#| fig-cap: Cumulative incidence of distant recurrences in the intention-to-treat population
+
+
 km4 <- survfit(Surv(DRtime / 365, DRplot) ~ randarm, data = df.fig3)
 ggsurvplot(
   km4,
@@ -1057,17 +1106,36 @@ est <- as.data.frame(cbind(m, l , u ))
 subgroup, events/n in treatment, events/n in control, HR, forest plot in log(HR)
 
 ```{r, fig.width=10, fig.height=6}
+#| label: fig-4
+#| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
+
+
 forestplot(results.plot, est$m, est$l, est$u, zero = 0,
            is.summary = 1:nrow(results.plot) %in% c(nrow(results.plot)),
            # xlog = TRUE, clip = c(-Inf, log(5)), xticks = c(.2, .5, 1, 2, 3, 4), 
            xlab = "Hazard ratio \n       Investigational arm | Control arm better")
 ```
 
-## Median follow-up time
+## Additional analysis
+
+We first fitted a Fine-Gray model without considering the stratified randomization.
 
 ```{r}
-fu <- prodlim(Surv(OStime / 30.44, OSevent) ~ 1, data = CAOsurv, reverse = TRUE)
-o_fu <- quantile(fu, c(.25, .5, .75))
+fomula <- model.matrix( ~ df.fig3$randarm)[,-1]
+CI.reg <- crr(df.fig3$DRtime, 
+              df.fig3$DRcmptrsk, 
+              cov1 = fomula,
+              failcode = 1,
+              cencode = 0)
+summary(CI.reg)
 ```
 
-The median follow-up time is `r round(o_fu[[4]][2],2)` months (interquartile range: `r round(o_fu[[4]][1],2)`, `r round(o_fu[[4]][3],2)`).
+Then we add a random intercept to each center-cN category.
+
+```{r}
+add<-comp.risk(Event(time,cause)~+1+cluster(id),data=multcif,cause=1,
+               n.sim=0,times=times,max.clust=NULL)
+
+out1<-random.cif(add,data=multcif,cause1=1,cause2=1)
+summary(out1)
+```
