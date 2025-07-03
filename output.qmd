@@ -1116,14 +1116,238 @@ forestplot(results.plot, est$m, est$l, est$u, zero = 0,
            xlab = "Hazard ratio \n       Investigational arm | Control arm better")
 ```
 
+## Primary Endpoint Analysis
+
+The primary endpoint analysis consists of stratified log-rank tests and mixed-effects Cox proportional hazards models to evaluate the effect of adding oxaliplatin to the standard 5-FU regimen on disease-free survival (DFS).
+
+### Stratified Log-rank Test
+
+We performed a stratified log-rank test accounting for the randomization stratification factors (center and clinical N category). Small centers with fewer than 4 patients were merged to ensure adequate power.
+
+```{r}
+#| label: stratified-logrank
+#| echo: true
+
+# Load required packages for primary endpoint analysis
+library(coin)
+library(coxme)
+
+# Check for small strata and create merged version if needed
+strata_sizes <- table(CAOsurv$s_nz)
+small_centres <- names(strata_sizes)[strata_sizes < 4]
+
+cat(sprintf("Centres with < 4 patients: %d out of %d centres\n", 
+            length(small_centres), length(strata_sizes)))
+
+# Create merged strata for small centres
+CAOsurv$s_nzsmall <- as.character(CAOsurv$s_nz)
+CAOsurv$s_nzsmall[CAOsurv$s_nz %in% small_centres] <- "small_centres_merged"
+CAOsurv$s_nzsmall <- as.factor(CAOsurv$s_nzsmall)
+
+cat(sprintf("After merging small centres: %d strata\n", nlevels(CAOsurv$s_nzsmall)))
+
+# Stratified log-rank test using coin package
+set.seed(29)  # For reproducibility of permutation test
+lr_test <- logrank_test(Surv(DFStime, DFSevent) ~ randarm | s_nzsmall, 
+                       data = CAOsurv,
+                       distribution = approximate(100000))
+
+cat("Stratified Log-rank Test Results:\n")
+cat(sprintf("Test statistic: %.4f\n", statistic(lr_test)))
+cat(sprintf("P-value (approximate): %.6f\n", pvalue(lr_test)))
+```
+
+### Mixed-effects Cox Model
+
+We fitted a mixed-effects Cox proportional hazards model with random intercepts for center and clinical N category to account for the hierarchical structure of the data.
+
+```{r}
+#| label: mixed-effects-cox
+#| echo: true
+
+# Fit mixed-effects Cox model with random intercepts for centre and cN category
+cat("Fitting mixed-effects Cox model with random intercepts...\n")
+
+# Create combined stratification variable for random effects
+CAOsurv$strata_combined <- interaction(CAOsurv$s_nz, CAOsurv$gesamt_n_col, drop = TRUE)
+
+# Fit the model
+cox_me_model <- coxme(Surv(DFStime, DFSevent) ~ randarm + (1 | s_nz) + (1 | gesamt_n_col), 
+                      data = CAOsurv)
+
+cat("Mixed-effects Cox Model Summary:\n")
+print(cox_me_model)
+
+# Extract hazard ratio and confidence interval
+hr <- exp(coef(cox_me_model))
+hr_se <- sqrt(vcov(cox_me_model)[1,1])
+hr_ci_lower <- exp(coef(cox_me_model) - 1.96 * hr_se)
+hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)
+p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))
+
+cat("\nHazard Ratio Results:\n")
+cat(sprintf("Hazard Ratio (5-FU + Oxaliplatin vs 5-FU): %.3f\n", hr))
+cat(sprintf("95%% Confidence Interval: (%.3f, %.3f)\n", hr_ci_lower, hr_ci_upper))
+cat(sprintf("P-value: %.6f\n", p_value_cox))
+```
+
+### Proportional Hazards Assumption Check
+
+We assessed the proportional hazards assumption using log-log plots of the survival curves by treatment group.
+
+```{r}
+#| label: proportional-hazards-check
+#| echo: true
+
+# Kaplan-Meier curves for log-log plot
+cat("Generating Kaplan-Meier curves for proportional hazards assessment...\n")
+
+CAOsurv$randarm_plot <- factor(CAOsurv$randarm, 
+                               levels = c("5-FU + Oxaliplatin", "5-FU"),
+                               labels = c("5-FU + Oxaliplatin", "5-FU"))
+
+km_fit <- prodlim(Surv(DFStime / 365, DFSevent) ~ randarm_plot, data = CAOsurv)
+
+# Create time points for log-log plot
+time_points <- seq(0, max(CAOsurv$DFStime)/365, length.out = 1000)
+
+# Extract survival probabilities
+surv_5fu <- predict(km_fit, times = time_points, 
+                    newdata = data.frame(randarm_plot = "5-FU"))[[1]]
+surv_5fuox <- predict(km_fit, times = time_points, 
+                      newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]]
+
+# Calculate log-log values (remove zeros to avoid -Inf)
+valid_idx_5fu <- surv_5fu > 0 & surv_5fu < 1
+valid_idx_5fuox <- surv_5fuox > 0 & surv_5fuox < 1
+
+loglog_5fu <- log(-log(surv_5fu[valid_idx_5fu]))
+loglog_5fuox <- log(-log(surv_5fuox[valid_idx_5fuox]))
+time_5fu <- time_points[valid_idx_5fu]
+time_5fuox <- time_points[valid_idx_5fuox]
+
+cat("Log-log transformation completed for proportional hazards assessment.\n")
+```
+
+### Survival Analysis Summary
+
+We calculated survival rates at key time points (3-year and 5-year) for both treatment groups.
+
+```{r}
+#| label: survival-summary
+#| echo: true
+
+# Calculate survival rates at key time points using predict function
+cat("3-year Disease-Free Survival:\n")
+surv_3yr_5fu <- predict(km_fit, times = 3, 
+                        newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
+surv_3yr_5fuox <- predict(km_fit, times = 3, 
+                          newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
+
+cat(sprintf("5-FU: %.1f%%\n", surv_3yr_5fu))
+cat(sprintf("5-FU + Oxaliplatin: %.1f%%\n", surv_3yr_5fuox))
+
+cat("\n5-year Disease-Free Survival:\n")
+surv_5yr_5fu <- predict(km_fit, times = 5, 
+                        newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
+surv_5yr_5fuox <- predict(km_fit, times = 5, 
+                          newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
+
+cat(sprintf("5-FU: %.1f%%\n", surv_5yr_5fu))
+cat(sprintf("5-FU + Oxaliplatin: %.1f%%\n", surv_5yr_5fuox))
+```
+
+### Primary Endpoint Analysis Plots
+
+#### Log-log Plot for Proportional Hazards
+
+```{r}
+#| label: fig-loglog-plot
+#| fig-cap: Log-Log Plot for Proportional Hazards Assessment
+#| echo: true
+
+# Log-log plot for proportional hazards
+plot(time_5fuox, loglog_5fuox, type = "l", col = "red", lwd = 2,
+     xlab = "Time (years)", ylab = "log(-log(S(t)))",
+     main = "Log-Log Plot (Proportional Hazards Check)",
+     ylim = range(c(loglog_5fu, loglog_5fuox), na.rm = TRUE))
+lines(time_5fu, loglog_5fu, col = "blue", lwd = 2)
+legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"), 
+       col = c("red", "blue"), lwd = 2, bty = "n")
+```
+
+#### Event Distribution by Treatment
+
+```{r}
+#| label: fig-event-distribution
+#| fig-cap: DFS Events by Treatment Arm
+#| echo: true
+
+# Event distribution by treatment
+event_table <- table(CAOsurv$randarm, CAOsurv$DFSevent)
+barplot(event_table, beside = TRUE, 
+        main = "DFS Events by Treatment Arm",
+        xlab = "DFS Event", ylab = "Number of Patients",
+        col = c("lightblue", "lightcoral"),
+        legend.text = rownames(event_table))
+```
+
+#### Follow-up Time Distribution
+
+```{r}
+#| label: fig-followup-distribution
+#| fig-cap: Follow-up Time Distribution by Treatment Arm
+#| echo: true
+
+# Follow-up time distribution
+boxplot(CAOsurv$DFStime/365 ~ CAOsurv$randarm,
+        main = "Follow-up Time Distribution",
+        xlab = "Treatment Arm", ylab = "Time (years)",
+        col = c("lightblue", "lightcoral"))
+```
+
+### Primary Endpoint Results Summary
+
+```{r}
+#| label: results-summary
+#| echo: true
+
+cat("PRIMARY ENDPOINT ANALYSIS - DISEASE-FREE SURVIVAL\n")
+cat(paste(rep("-", 50), collapse=""), "\n", sep="")
+cat(sprintf("Study Population: %d patients\n", nrow(CAOsurv)))
+cat(sprintf("- 5-FU: %d patients\n", sum(CAOsurv$randarm == "5-FU")))
+cat(sprintf("- 5-FU + Oxaliplatin: %d patients\n", sum(CAOsurv$randarm == "5-FU + Oxaliplatin")))
+
+cat(sprintf("\nEvents: %d (%.1f%%)\n", sum(CAOsurv$DFSevent), 
+            100 * sum(CAOsurv$DFSevent) / nrow(CAOsurv)))
+
+cat("\nSURVIVAL RATES:\n")
+cat(sprintf("3-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_3yr_5fu, surv_3yr_5fuox))
+cat(sprintf("5-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_5yr_5fu, surv_5yr_5fuox))
+
+cat("\nSTRATIFIED LOG-RANK TEST:\n")
+cat(sprintf("P-value: %.6f\n", pvalue(lr_test)))
+cat(sprintf("Significance level: %s\n", ifelse(pvalue(lr_test) < 0.05, "Significant (p < 0.05)", "Not significant (p >= 0.05)")))
+
+cat("\nMIXED-EFFECTS COX MODEL:\n")
+cat(sprintf("Hazard Ratio: %.3f (95%% CI: %.3f - %.3f)\n", hr, hr_ci_lower, hr_ci_upper))
+cat(sprintf("P-value: %.6f\n", p_value_cox))
+cat(sprintf("Interpretation: 5-FU + Oxaliplatin %s the hazard by %.1f%% compared to 5-FU alone\n",
+            ifelse(hr < 1, "reduces", "increases"),
+            abs((hr - 1) * 100)))
+
+cat("\nPROPORTIONAL HAZARDS ASSUMPTION:\n")
+cat("Check the log-log plot for parallel lines. If lines are approximately parallel,the proportional hazards assumption is reasonable.\n")
+```
+
 ## Additional analysis
 
 We first fitted a Fine-Gray model without considering the stratified randomization.
 
 ```{r}
 fomula <- model.matrix( ~ df.fig3$randarm)[,-1]
-CI.reg <- crr(df.fig3$DRtime, 
-              df.fig3$DRcmptrsk, 
+CI.reg <- crr(df.fig3$DRtime,
+              df.fig3$DRcmptrsk,
               cov1 = fomula,
               failcode = 1,
               cencode = 0)
