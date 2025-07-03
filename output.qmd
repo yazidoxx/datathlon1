@@ -1120,38 +1120,48 @@ forestplot(results.plot, est$m, est$l, est$u, zero = 0,
 
 The primary endpoint analysis consists of stratified log-rank tests and mixed-effects Cox proportional hazards models to evaluate the effect of adding oxaliplatin to the standard 5-FU regimen on disease-free survival (DFS).
 
+**Reproducibility Note**: All code for statistical analyses in this section is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden from the output but fully documented for transparency and replication.
+
 ### Stratified Log-rank Test
 
 We performed a stratified log-rank test accounting for the randomization stratification factors (center and clinical N category). Small centers with fewer than 4 patients were merged to ensure adequate power.
 
 ```{r}
 #| label: stratified-logrank
-#| echo: true
+#| echo: false
 
 # Load required packages for primary endpoint analysis
+# coin: for stratified log-rank tests with permutation distributions
+# coxme: for mixed-effects Cox proportional hazards models
 library(coin)
 library(coxme)
 
-# Check for small strata and create merged version if needed
+# STEP 1: Handle small strata to ensure statistical power
+# Check distribution of patients across centers (s_nz variable)
+# Small centers with <4 patients need to be merged to avoid sparse data issues
 strata_sizes <- table(CAOsurv$s_nz)
 small_centres <- names(strata_sizes)[strata_sizes < 4]
 
 cat(sprintf("Centres with < 4 patients: %d out of %d centres\n", 
             length(small_centres), length(strata_sizes)))
 
-# Create merged strata for small centres
+# Create merged strata variable for small centres
+# This preserves the stratification structure while ensuring adequate sample sizes
 CAOsurv$s_nzsmall <- as.character(CAOsurv$s_nz)
 CAOsurv$s_nzsmall[CAOsurv$s_nz %in% small_centres] <- "small_centres_merged"
 CAOsurv$s_nzsmall <- as.factor(CAOsurv$s_nzsmall)
 
 cat(sprintf("After merging small centres: %d strata\n", nlevels(CAOsurv$s_nzsmall)))
 
-# Stratified log-rank test using coin package
-set.seed(29)  # For reproducibility of permutation test
+# STEP 2: Perform stratified log-rank test
+# This test accounts for the randomization stratification factors
+# Uses permutation-based p-value calculation for robust inference
+set.seed(29)  # Set seed for reproducibility of permutation test results
 lr_test <- logrank_test(Surv(DFStime, DFSevent) ~ randarm | s_nzsmall, 
                        data = CAOsurv,
                        distribution = approximate(100000))
 
+# Display results
 cat("Stratified Log-rank Test Results:\n")
 cat(sprintf("Test statistic: %.4f\n", statistic(lr_test)))
 cat(sprintf("P-value (approximate): %.6f\n", pvalue(lr_test)))
@@ -1163,28 +1173,35 @@ We fitted a mixed-effects Cox proportional hazards model with random intercepts 
 
 ```{r}
 #| label: mixed-effects-cox
-#| echo: true
+#| echo: false
 
-# Fit mixed-effects Cox model with random intercepts for centre and cN category
 cat("Fitting mixed-effects Cox model with random intercepts...\n")
 
-# Create combined stratification variable for random effects
+# STEP 1: Create stratification variables for random effects
+# The model includes random intercepts to account for:
+# - Center effects (s_nz): different centers may have varying baseline hazards
+# - Clinical N category effects (gesamt_n_col): baseline prognostic factor
 CAOsurv$strata_combined <- interaction(CAOsurv$s_nz, CAOsurv$gesamt_n_col, drop = TRUE)
 
-# Fit the model
+# STEP 2: Fit mixed-effects Cox proportional hazards model
+# Fixed effect: treatment arm (randarm)
+# Random effects: center (s_nz) and clinical N category (gesamt_n_col)
+# This accounts for clustering within centers and baseline prognostic factors
 cox_me_model <- coxme(Surv(DFStime, DFSevent) ~ randarm + (1 | s_nz) + (1 | gesamt_n_col), 
                       data = CAOsurv)
 
 cat("Mixed-effects Cox Model Summary:\n")
 print(cox_me_model)
 
-# Extract hazard ratio and confidence interval
-hr <- exp(coef(cox_me_model))
-hr_se <- sqrt(vcov(cox_me_model)[1,1])
-hr_ci_lower <- exp(coef(cox_me_model) - 1.96 * hr_se)
-hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)
-p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))
+# STEP 3: Extract and calculate key statistical measures
+# Extract hazard ratio and confidence interval for treatment effect
+hr <- exp(coef(cox_me_model))  # Exponentiate to get hazard ratio
+hr_se <- sqrt(vcov(cox_me_model)[1,1])  # Standard error of log hazard ratio
+hr_ci_lower <- exp(coef(cox_me_model) - 1.96 * hr_se)  # Lower 95% CI
+hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)  # Upper 95% CI
+p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
 
+# Display results
 cat("\nHazard Ratio Results:\n")
 cat(sprintf("Hazard Ratio (5-FU + Oxaliplatin vs 5-FU): %.3f\n", hr))
 cat(sprintf("95%% Confidence Interval: (%.3f, %.3f)\n", hr_ci_lower, hr_ci_upper))
@@ -1197,27 +1214,34 @@ We assessed the proportional hazards assumption using log-log plots of the survi
 
 ```{r}
 #| label: proportional-hazards-check
-#| echo: true
+#| echo: false
 
-# Kaplan-Meier curves for log-log plot
 cat("Generating Kaplan-Meier curves for proportional hazards assessment...\n")
 
+# STEP 1: Prepare data for proportional hazards assessment
+# Create properly ordered factor for treatment groups
 CAOsurv$randarm_plot <- factor(CAOsurv$randarm, 
                                levels = c("5-FU + Oxaliplatin", "5-FU"),
                                labels = c("5-FU + Oxaliplatin", "5-FU"))
 
+# STEP 2: Fit Kaplan-Meier survival curves by treatment group
+# Convert time to years for easier interpretation
 km_fit <- prodlim(Surv(DFStime / 365, DFSevent) ~ randarm_plot, data = CAOsurv)
 
-# Create time points for log-log plot
+# STEP 3: Create fine-grained time points for smooth log-log curves
+# Use 1000 time points to create smooth curves for assessment
 time_points <- seq(0, max(CAOsurv$DFStime)/365, length.out = 1000)
 
-# Extract survival probabilities
+# STEP 4: Extract survival probabilities at all time points
+# Predict survival probabilities for each treatment group
 surv_5fu <- predict(km_fit, times = time_points, 
                     newdata = data.frame(randarm_plot = "5-FU"))[[1]]
 surv_5fuox <- predict(km_fit, times = time_points, 
                       newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]]
 
-# Calculate log-log values (remove zeros to avoid -Inf)
+# STEP 5: Calculate log-log transformation for proportional hazards check
+# Remove boundary values (0 and 1) to avoid -Inf in log-log transformation
+# Proportional hazards assumption: log(-log(S(t))) curves should be parallel
 valid_idx_5fu <- surv_5fu > 0 & surv_5fu < 1
 valid_idx_5fuox <- surv_5fuox > 0 & surv_5fuox < 1
 
@@ -1235,7 +1259,7 @@ We calculated survival rates at key time points (3-year and 5-year) for both tre
 
 ```{r}
 #| label: survival-summary
-#| echo: true
+#| echo: false
 
 # Calculate survival rates at key time points using predict function
 cat("3-year Disease-Free Survival:\n")
@@ -1264,9 +1288,11 @@ cat(sprintf("5-FU + Oxaliplatin: %.1f%%\n", surv_5yr_5fuox))
 ```{r}
 #| label: fig-loglog-plot
 #| fig-cap: Log-Log Plot for Proportional Hazards Assessment
-#| echo: true
+#| echo: false
 
-# Log-log plot for proportional hazards
+# Create log-log plot for proportional hazards assessment
+# Parallel lines indicate that the proportional hazards assumption is satisfied
+# Diverging lines suggest violation of the assumption
 plot(time_5fuox, loglog_5fuox, type = "l", col = "red", lwd = 2,
      xlab = "Time (years)", ylab = "log(-log(S(t)))",
      main = "Log-Log Plot (Proportional Hazards Check)",
@@ -1281,9 +1307,11 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```{r}
 #| label: fig-event-distribution
 #| fig-cap: DFS Events by Treatment Arm
-#| echo: true
+#| echo: false
 
-# Event distribution by treatment
+# Create bar plot showing distribution of DFS events by treatment arm
+# This visualization shows the number of events vs. censored observations
+# Helps assess balance between treatment groups in terms of event rates
 event_table <- table(CAOsurv$randarm, CAOsurv$DFSevent)
 barplot(event_table, beside = TRUE, 
         main = "DFS Events by Treatment Arm",
@@ -1297,9 +1325,11 @@ barplot(event_table, beside = TRUE,
 ```{r}
 #| label: fig-followup-distribution
 #| fig-cap: Follow-up Time Distribution by Treatment Arm
-#| echo: true
+#| echo: false
 
-# Follow-up time distribution
+# Create boxplot showing distribution of follow-up times by treatment arm
+# This visualization helps assess balance in follow-up duration between groups
+# Important for ensuring comparability of survival analysis results
 boxplot(CAOsurv$DFStime/365 ~ CAOsurv$randarm,
         main = "Follow-up Time Distribution",
         xlab = "Treatment Arm", ylab = "Time (years)",
@@ -1310,25 +1340,35 @@ boxplot(CAOsurv$DFStime/365 ~ CAOsurv$randarm,
 
 ```{r}
 #| label: results-summary
-#| echo: true
+#| echo: false
+
+# COMPREHENSIVE SUMMARY OF PRIMARY ENDPOINT ANALYSIS
+# This section provides a complete summary of all key statistical findings
+# for the primary endpoint (disease-free survival) analysis
 
 cat("PRIMARY ENDPOINT ANALYSIS - DISEASE-FREE SURVIVAL\n")
 cat(paste(rep("-", 50), collapse=""), "\n", sep="")
+
+# STEP 1: Display study population characteristics
 cat(sprintf("Study Population: %d patients\n", nrow(CAOsurv)))
 cat(sprintf("- 5-FU: %d patients\n", sum(CAOsurv$randarm == "5-FU")))
 cat(sprintf("- 5-FU + Oxaliplatin: %d patients\n", sum(CAOsurv$randarm == "5-FU + Oxaliplatin")))
 
+# STEP 2: Overall event rate
 cat(sprintf("\nEvents: %d (%.1f%%)\n", sum(CAOsurv$DFSevent), 
             100 * sum(CAOsurv$DFSevent) / nrow(CAOsurv)))
 
+# STEP 3: Key survival rates at clinically relevant time points
 cat("\nSURVIVAL RATES:\n")
 cat(sprintf("3-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_3yr_5fu, surv_3yr_5fuox))
 cat(sprintf("5-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_5yr_5fu, surv_5yr_5fuox))
 
+# STEP 4: Stratified log-rank test results
 cat("\nSTRATIFIED LOG-RANK TEST:\n")
 cat(sprintf("P-value: %.6f\n", pvalue(lr_test)))
 cat(sprintf("Significance level: %s\n", ifelse(pvalue(lr_test) < 0.05, "Significant (p < 0.05)", "Not significant (p >= 0.05)")))
 
+# STEP 5: Mixed-effects Cox model results (accounts for clustering)
 cat("\nMIXED-EFFECTS COX MODEL:\n")
 cat(sprintf("Hazard Ratio: %.3f (95%% CI: %.3f - %.3f)\n", hr, hr_ci_lower, hr_ci_upper))
 cat(sprintf("P-value: %.6f\n", p_value_cox))
@@ -1336,8 +1376,9 @@ cat(sprintf("Interpretation: 5-FU + Oxaliplatin %s the hazard by %.1f%% compared
             ifelse(hr < 1, "reduces", "increases"),
             abs((hr - 1) * 100)))
 
+# STEP 6: Model assumptions assessment guidance
 cat("\nPROPORTIONAL HAZARDS ASSUMPTION:\n")
-cat("Check the log-log plot for parallel lines. If lines are approximately parallel,the proportional hazards assumption is reasonable.\n")
+cat("Check the log-log plot for parallel lines. If lines are approximately parallel, the proportional hazards assumption is reasonable.\n")
 ```
 
 ## Additional analysis
