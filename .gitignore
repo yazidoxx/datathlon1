@@ -178,3 +178,4 @@ cython_debug/
 *.css
 *.woff
 *.js
+.Rproj.user
