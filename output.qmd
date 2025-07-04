@@ -785,7 +785,7 @@ ggsurvplot(
 
 The overall shape of the overall survival curve and risk table are quite similar to the original figure. However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).
 
-## Figure 3:  Cumulative incidence of locoregional recurrences and cumulative incidence of distant recurrences in the intention-to-treat population
+## Figure 3: Cumulative incidence of locoregional recurrences and cumulative incidence of distant recurrences in the intention-to-treat population
 
 The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. (Or we should do that too, and say it's not reproducible?)
 
