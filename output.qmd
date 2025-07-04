@@ -1103,6 +1103,8 @@ u <- log(results$upper)
 est <- as.data.frame(cbind(m, l , u ))
 ```
 
+Our reproduced forest plot is identical to the original figure reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.
+
 ```{r, fig.width=10, fig.height=6}
 #| label: fig-4
 #| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
