@@ -27,6 +27,7 @@ library(prodlim) # median follow-up time
 # figure 4
 library(forestplot)
 # additional analysis
+library(cmprsk)
 
 ## add libraries here
 
@@ -1397,7 +1398,7 @@ summary(CI.reg)
 
 Then we add a random intercept to each center-cN category.
 
-```{r}
+```{r, eval=FALSE}
 add<-comp.risk(Event(time,cause)~+1+cluster(id),data=multcif,cause=1,
                n.sim=0,times=times,max.clust=NULL)
 
