@@ -632,15 +632,15 @@ table_data <- data.frame(
 )
 
 # Print the table
-cat("Table 3: Intention-to-treat analysis of all-cause deaths\n\n")
-cat(sprintf("%-45s %-25s %-25s\n", "", 
-           paste0("Investigational group (n=", n_investigational, ")"),
-           paste0("Control group (n=", n_control, ")")))
-cat(paste(rep("-", 95), collapse = ""), "\n")
-for (i in 1:nrow(table_data)) {
-  cat(sprintf("%-45s %-25s %-25s\n", table_data$Cause[i], table_data$Investigational[i], table_data$Control[i]))
-}
-cat(paste(rep("-", 95), collapse = ""), "\n")
+# cat("Table 3: Intention-to-treat analysis of all-cause deaths\n\n")
+# cat(sprintf("%-45s %-25s %-25s\n", "", 
+#            paste0("Investigational group (n=", n_investigational, ")"),
+#            paste0("Control group (n=", n_control, ")")))
+# cat(paste(rep("-", 95), collapse = ""), "\n")
+# for (i in 1:nrow(table_data)) {
+#   cat(sprintf("%-45s %-25s %-25s\n", table_data$Cause[i], table_data$Investigational[i], table_data$Control[i]))
+# }
+# cat(paste(rep("-", 95), collapse = ""), "\n")
 
 # Create column headers with group sizes
 colnames(table_data) <- c("Cause", 
