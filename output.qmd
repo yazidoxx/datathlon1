@@ -1111,7 +1111,7 @@ Our reproduced forest plot is identical to the original figure reported by Röde
 #| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
 
 
-forestplot(results.plot, est$m, est$l, est$u, zero = 0,
+forestplot(results.plot, labeltext = list("Subgroups", "Intervention (event/total n)", "Control (event/total n", "HR (95%CI)"), exp(est$m), exp(est$l), exp(est$u), zero = 1,
            is.summary = 1:nrow(results.plot) %in% c(nrow(results.plot)),
            # xlog = TRUE, clip = c(-Inf, log(5)), xticks = c(.2, .5, 1, 2, 3, 4), 
            xlab = "Hazard ratio \n       Investigational arm | Control arm better")
