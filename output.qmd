@@ -96,9 +96,7 @@ sessionInfo()
 In Table 1, we report the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only). We calculated:
 
 -   the mean and standard deviation of age,
-
 -   the median and interquartile range for age,
-
 -   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
 
 These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
@@ -735,7 +733,7 @@ However, some numbers do not match with the original consort diagram. The counts
 
 Regardless of how many patients remained in their assigned group and completed each treatment step, we conducted all analyses according to the intention-to-treat (ITT) principle, and the ITT counts are identical to those in the original trial.
 
-## Figure 2
+## Figure 2: Disease-free survival and overall survival in the intention-to-treat population
 
 In Figure 2, we presented the survival outcomes for patients by treatment group, using Kaplan–Meier estimates.
 
@@ -787,7 +785,9 @@ ggsurvplot(
 
 The overall shape of the overall survival curve and risk table are quite similar to the original figure. However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).
 
-## Figure 3
+## Figure 3:  Cumulative incidence of locoregional recurrences and cumulative incidence of distant recurrences in the intention-to-treat population
+
+The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. (Or we should do that too, and say it's not reproducible?)
 
 ```{r}
 df.fig3 <- CAOsurv %>%
@@ -805,8 +805,6 @@ df.fig3 <- CAOsurv %>%
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1))
 ```
-
-We do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. –Or we should do that too, and say it's not reproducible?
 
 ```{r}
 #| label: fig-3a
@@ -850,7 +848,9 @@ ggsurvplot(
 )
 ```
 
-## Figure 4
+## Figure 4: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
+
+In Figure 4, we reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, T and N categories, ypT and ypN categories, resection completeness, pathological stage, and type of surgery.
 
 ```{r}
 # Prepare the data for the forest plot
@@ -1104,7 +1104,7 @@ u <- log(results$upper)
 est <- as.data.frame(cbind(m, l , u ))
 ```
 
-subgroup, events/n in treatment, events/n in control, HR, forest plot in log(HR)
+Our reproduced forest plot is identical to the original figure reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.
 
 ```{r, fig.width=10, fig.height=6}
 #| label: fig-4
