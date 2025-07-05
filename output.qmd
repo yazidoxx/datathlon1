@@ -32,6 +32,7 @@ library(survminer)
 
 library(coin) # coin: for stratified log-rank tests with permutation distributions
 library(coxme) # coxme: for mixed-effects Cox proportional hazards models
+library(broom.mixed)
 
 # subgroup analysis
 library(forestplot) # figure 4
@@ -46,7 +47,6 @@ load("actual data/Primary_endpoint_data.rda")
 ## Introduction
 
 In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in [Rödel et al. (2015)](http://dx.doi.org/10.1016/S1470-2045(15)00159-X). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
-
 
 ### Objectives
 
@@ -88,7 +88,7 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 ### Session Information
 
-We ran the code under below environment setting.  
+We ran the code under below environment setting.
 
 ```{r}
 sessionInfo()
@@ -108,7 +108,7 @@ fu <- prodlim(Surv(OStime / 30.44, OSevent) ~ 1, data = CAOsurv, reverse = TRUE)
 o_fu <- quantile(fu, c(.25, .5, .75))
 ```
 
-The median follow-up time of this study is `r round(o_fu[[4]][2],2)` months (interquartile range: `r round(o_fu[[4]][1],2)`, `r round(o_fu[[4]][3],2)`). The median follow-up is approximately 4.2 years, and the interquartile range covers 5 years. The data is sufficient to assess the 3-year disease-free survival as in the sample size calculation.  
+The median follow-up time of this study is `r round(o_fu[[4]][2],2)` months (interquartile range: `r round(o_fu[[4]][1],2)`, `r round(o_fu[[4]][3],2)`). The median follow-up is approximately 4.2 years, and the interquartile range covers 5 years. The data is sufficient to assess the 3-year disease-free survival as in the sample size calculation.
 
 #### Comparison with Figure 1
 
@@ -164,7 +164,6 @@ The main patient counts are similar to the original figure: 613 patients in the 
 However, some numbers do not match with the original consort diagram. **The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).**
 
 Regardless of how many patients remained in their assigned group and completed each treatment step, we conducted all analyses according to the intention-to-treat (ITT) principle, and **the ITT counts are identical to those in the original trial**.
-
 
 #### Comparison with Table 1
 
@@ -381,13 +380,9 @@ knitr::kable(table1_data)
 
 **The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
 
-
-
-
 ## Primary Endpoint Analysis
 
 The primary endpoint analysis consists of stratified log-rank tests and mixed-effects Cox proportional hazards models to evaluate the effect of adding oxaliplatin to the standard 5-FU regimen on disease-free survival (DFS). We first compare the DFS incidence with the paper before the analysis.
-
 
 #### Comparison with Table 2
 
@@ -546,7 +541,6 @@ knitr::kable(results_data)
 
 **The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper. We suspect that the discrepancy is likely due to additional clinical review in original study.**
 
-
 #### Comparison Figure 2a
 
 In this section, we reproduced the Kaplan–Meier curve for the primary endpoint, DFS, by treatment group, for the comparison with Figure 2a panel in paper.
@@ -556,7 +550,6 @@ CAOsurv$randarmplot <- CAOsurv$randarm
 levels(CAOsurv$randarmplot) <- c("5-FU","5-FU/OX")
 CAOsurv$randarmplot <- relevel(CAOsurv$randarmplot, "5-FU/OX")
 ```
-
 
 ```{r}
 #| label: fig-2a
@@ -574,11 +567,10 @@ ggsurvplot(
 ```
 
 **The reproduced curve and risk table are identical to the original ones in the published paper.**
-                                              
 
 ### Stratified Log-rank Test
 
-We performed a stratified log-rank test accounting for the randomization stratification factors (center and clinical N category, according to the paper). Based on the additional file we received, small stratum with fewer than 4 patients were merged to ensure adequate power. We followed the file and used the merged center-cN-categroy strata throughout the analysis.  
+We performed a stratified log-rank test accounting for the randomization stratification factors (center and clinical N category, according to the paper). Based on the additional file we received, small stratum with fewer than 4 patients were merged to ensure adequate power. We followed the file and used the merged center-cN-categroy strata throughout the analysis.
 
 ```{r}
 #| label: stratified-logrank
@@ -595,7 +587,6 @@ lr_test <- logrank_test(Surv(DFStime, DFSevent) ~ randarm | s_nzsmall,
 
 Authors reported an exact stratified log-rank test; however, we encountered an error `cannot compute exact p-values with blocks` when using the exact distribution in the test. Instead, we applied an approximative (Monte Carlo) log-rank test. The result showed that the DFS was different in the two treatment groups (p = `r round(pvalue(lr_test), 3)`), same as in the paper.
 
-
 ### Mixed-effects Cox Model
 
 We fitted a mixed-effects Cox proportional hazards model with random intercepts for center and clinical N category to account for the hierarchical structure of the data.
@@ -603,25 +594,12 @@ We fitted a mixed-effects Cox proportional hazards model with random intercepts 
 ```{r}
 #| label: mixed-effects-cox
 
-
-cat("Fitting mixed-effects Cox model with random intercepts...\n")
-
-# STEP 1: Create stratification variables for random effects
-# The model includes random intercepts to account for:
-# - Center effects (s_nz): different centers may have varying baseline hazards
-# - Clinical N category effects (gesamt_n_col): baseline prognostic factor
-CAOsurv$strata_combined <- interaction(CAOsurv$s_nz, CAOsurv$gesamt_n_col, drop = TRUE)
-
 # STEP 2: Fit mixed-effects Cox proportional hazards model
 # Fixed effect: treatment arm (randarm)
-# Random effects: center (s_nz) and clinical N category (gesamt_n_col)
+# Random effects: by center-cN strata (s_nzsmall)
 # This accounts for clustering within centers and baseline prognostic factors
 cox_me_model <- coxme(Surv(DFStime, DFSevent) ~ randarm + (1 | s_nzsmall), 
                       data = CAOsurv)
-
-cat("Mixed-effects Cox Model Summary:\n")
-print(cox_me_model)
-
 
 # STEP 3: Extract and calculate key statistical measures
 # Extract hazard ratio and confidence interval for treatment effect
@@ -630,15 +608,11 @@ hr_se <- sqrt(vcov(cox_me_model)[1,1])  # Standard error of log hazard ratio
 hr_ci_lower <- exp(coef(cox_me_model) - 1.96 * hr_se)  # Lower 95% CI
 hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)  # Upper 95% CI
 p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
-
-# Display results
-cat("\nHazard Ratio Results:\n")
-cat(sprintf("Hazard Ratio (5-FU + Oxaliplatin vs 5-FU): %.3f\n", hr))
-cat(sprintf("95%% Confidence Interval: (%.3f, %.3f)\n", hr_ci_lower, hr_ci_upper))
-cat(sprintf("P-value: %.6f\n", p_value_cox))
 ```
 
-[[report and interpret HR(95%CI) and compare to numbers in the paper. See if they added p-value in the paper. If not, then we don't talk about it in text.]]
+The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 3)` with 95% CI: (`r round(hr_ci_lower,3)`, `r round(hr_ci_upper,3)`), p=`r round(p_value_cox, 3)`.
+
+\[\[report and interpret HR(95%CI) and compare to numbers in the paper. See if they added p-value in the paper. If not, then we don't talk about it in text.\]\]
 
 ### Proportional Hazards Assumption Check
 
@@ -657,7 +631,7 @@ CAOsurv$randarm_plot <- factor(CAOsurv$randarm,
 
 # STEP 2: Fit Kaplan-Meier survival curves by treatment group
 # Convert time to years for easier interpretation
-km_fit <- prodlim(Surv(DFStime / 365, DFSevent) ~ randarm_plot, data = CAOsurv)
+km_fit2 <- prodlim(Hist(DFStime / 365, DFSevent) ~ randarm_plot + cluster(s_nzsmall), data = CAOsurv)
 
 # STEP 3: Create fine-grained time points for smooth log-log curves
 # Use 1000 time points to create smooth curves for assessment
@@ -665,23 +639,27 @@ time_points <- seq(0, max(CAOsurv$DFStime)/365, length.out = 1000)
 
 # STEP 4: Extract survival probabilities at all time points
 # Predict survival probabilities for each treatment group
-surv_5fu <- predict(km_fit, times = time_points, 
+surv_5fu2 <- predict(km_fit2, times = time_points, 
                     newdata = data.frame(randarm_plot = "5-FU"))[[1]]
-surv_5fuox <- predict(km_fit, times = time_points, 
+surv_5fuox2 <- predict(km_fit2, times = time_points, 
                       newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]]
+
 
 # STEP 5: Calculate log-log transformation for proportional hazards check
 # Remove boundary values (0 and 1) to avoid -Inf in log-log transformation
 # Proportional hazards assumption: log(-log(S(t))) curves should be parallel
-valid_idx_5fu <- surv_5fu > 0 & surv_5fu < 1
-valid_idx_5fuox <- surv_5fuox > 0 & surv_5fuox < 1
 
-loglog_5fu <- log(-log(surv_5fu[valid_idx_5fu]))
-loglog_5fuox <- log(-log(surv_5fuox[valid_idx_5fuox]))
+valid_idx_5fu <- surv_5fu2 > 0 & surv_5fu2 < 1
+valid_idx_5fuox <- surv_5fuox2 > 0 & surv_5fuox2 < 1
+
+loglog_5fu <- log(-log(surv_5fu2[valid_idx_5fu]))
+loglog_5fuox <- log(-log(surv_5fuox2[valid_idx_5fuox]))
 time_5fu <- log(time_points[valid_idx_5fu])
 time_5fuox <- log(time_points[valid_idx_5fuox])
 
-# cat("Log-log transformation completed for proportional hazards assessment.\n")
+# res <- cox.zph(cox_me_model)
+# res
+# plot(res)
 ```
 
 ```{r}
@@ -701,39 +679,24 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
        col = c("red", "blue"), lwd = 2, bty = "n")
 ```
 
-[[Shouldn't this be a downward plot? Double check the cox.ph()]] Although the lines crossed early in the follow-up time, there is no evidence on the violation of proportional hazard assumption during the major follow-up period.
-
-
-
+\[\[Maybe it's a violation...\]\] Although the lines crossed early in the follow-up time, there is no evidence on the violation of proportional hazard assumption during the major follow-up period.
 
 ```{r We calculated survival rates at key time points (3-year and 5-year) for both treatment groups.}
 #| label: survival-summary
-#| eval: false
-
 
 # Calculate survival rates at key time points using predict function
-cat("3-year Disease-Free Survival:\n")
-surv_3yr_5fu <- predict(km_fit, times = 3, 
+surv_3yr_5fu <- predict(km_fit2, times = 3, 
                         newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-surv_3yr_5fuox <- predict(km_fit, times = 3, 
+surv_3yr_5fuox <- predict(km_fit2, times = 3, 
                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 
-cat(sprintf("5-FU: %.1f%%\n", surv_3yr_5fu))
-cat(sprintf("5-FU + Oxaliplatin: %.1f%%\n", surv_3yr_5fuox))
-
-cat("\n5-year Disease-Free Survival:\n")
-surv_5yr_5fu <- predict(km_fit, times = 5, 
-                        newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-surv_5yr_5fuox <- predict(km_fit, times = 5, 
-                          newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
-
-cat(sprintf("5-FU: %.1f%%\n", surv_5yr_5fu))
-cat(sprintf("5-FU + Oxaliplatin: %.1f%%\n", surv_5yr_5fuox))
+# surv_5yr_5fu <- predict(km_fit, times = 5, 
+#                         newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
+# surv_5yr_5fuox <- predict(km_fit, times = 5, 
+#                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 ```
 
-
-
-
+The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group. 
 
 ```{r Event Distribution by Treatment}
 #| label: fig-event-distribution
@@ -752,7 +715,6 @@ barplot(event_table, beside = TRUE,
         legend.text = rownames(event_table))
 ```
 
-
 ```{r Follow-up Time Distribution}
 #| label: fig-followup-distribution
 #| fig-cap: Follow-up Time Distribution by Treatment Arm
@@ -767,8 +729,6 @@ boxplot(CAOsurv$DFStime/365 ~ CAOsurv$randarm,
         xlab = "Treatment Arm", ylab = "Time (years)",
         col = c("lightblue", "lightcoral"))
 ```
-
-
 
 ```{r}
 #| label: results-summary
@@ -816,7 +776,7 @@ cat("Check the log-log plot for parallel lines. If lines are approximately paral
 
 ## Secondary Endpoints Analysis
 
-[[Overall description on secondary endpoints]]
+\[\[Overall description on secondary endpoints\]\]
 
 #### Comparison with Table 3
 
@@ -957,8 +917,7 @@ ft
 
 **We could reproduce the counts and percentages for all-cause deaths and specific causes exactly as reported in the original Table 3 for both the investigational and control groups.**
 
-
-#### Comparison with Figure 2b 
+#### Comparison with Figure 2b
 
 We presented the Kaplan–Meier curve for overall survival by treatment group for comparison with Figure 2b panel in paper.
 
@@ -981,10 +940,9 @@ ggsurvplot(
 
 The overall shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).**
 
-
 #### Comparison with Figure 3
 
-The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. 
+The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
 
 ```{r}
 df.fig3 <- CAOsurv %>%
@@ -1007,6 +965,12 @@ df.fig3 <- CAOsurv %>%
 #| label: fig-3a
 #| fig-cap: Cumulative incidence of locoregional recurrences in the intention-to-treat population
 
+# alternative:
+CompRiskFrame <- data.frame(time=1:100,event=rbinom(100,2,.5),X=rbinom(100,1,.5)) 
+crFit <- prodlim(Hist(time,event)~X,data=CompRiskFrame) 
+
+summary(crFit,cause=2) 
+plot(crFit,cause=2)
 
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
@@ -1044,14 +1008,13 @@ ggsurvplot(
 )
 ```
 
-Note that we didn't convert the cumulative incidence to percentage.  
-
+Note that we didn't convert the cumulative incidence to percentage.
 
 ## Subgroup analysis
 
 #### Comparison with Figure 4
 
-In Figure 4, we reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint. 
+In Figure 4, we reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint.
 
 ```{r}
 # Prepare the data for the forest plot
@@ -1306,7 +1269,6 @@ u <- log(results$upper)
 est <- as.data.frame(cbind(m, l , u ))
 ```
 
-
 ```{r, fig.width=11, fig.height=10}
 #| label: fig-4
 #| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
@@ -1341,9 +1303,7 @@ forestplot(results.plot,
   fp_set_zebra_style("#f9f9f9")
 ```
 
-
 **Our reproduced forest plot is identical to the original figure reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.**
-
 
 ## Additional analysis
 
@@ -1368,16 +1328,3 @@ add<-comp.risk(Event(time,cause)~+1+cluster(id),data=multcif,cause=1,
 out1<-random.cif(add,data=multcif,cause1=1,cause2=1)
 summary(out1)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
