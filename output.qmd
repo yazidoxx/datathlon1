@@ -7,7 +7,6 @@ execute:
   echo: true
 format: html
 toc: true
-toc-expand: 3
 code-fold: true
 editor: visual
 ---
@@ -39,7 +38,7 @@ library(forestplot) # figure 4
 library(tidyr)
 
 # additional analysis
-
+library(cmprsk)
 
 # load data
 load("actual data/Primary_endpoint_data.rda") 
