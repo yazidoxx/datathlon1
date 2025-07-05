@@ -94,6 +94,9 @@ We ran the code under below environment setting.
 sessionInfo()
 ```
 
+**R and Package Versions Used** 
+Initially, we proposed to conduct the reproduction using R version 3.1-2 with add-on packages coxme (version 2.2-3), prodlim (version 1.4.3), coin (1.0-23), and cmprsk (2.2-7) as presented in the original paper. We tried to install and downgrade to these versions to match the original environment. However, we encountered rendering issues with Markdown. Therefore, we proceeded with our current setup instead, using 
+
 **Reproducibility Note**: All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden from the output but fully documented for transparency and replication.  
 
 ## Trial Profile & Data Overview
