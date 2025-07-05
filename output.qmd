@@ -676,21 +676,21 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
        col = c("red", "blue"), lwd = 2, bty = "n")
 ```
 
-\[\[Shouldn't this be a downward plot? Double check the cox.ph()\]\] Although the lines crossed early in the follow-up time, there is no evidence on the violation of proportional hazard assumption during the major follow-up period.
+\[\[Maybe it's a violation...\]\] Although the lines crossed early in the follow-up time, there is no evidence on the violation of proportional hazard assumption during the major follow-up period.
 
 ```{r We calculated survival rates at key time points (3-year and 5-year) for both treatment groups.}
 #| label: survival-summary
 
 # Calculate survival rates at key time points using predict function
-surv_3yr_5fu <- predict(km_fit, times = 3, 
+surv_3yr_5fu <- predict(km_fit2, times = 3, 
                         newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-surv_3yr_5fuox <- predict(km_fit, times = 3, 
+surv_3yr_5fuox <- predict(km_fit2, times = 3, 
                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 
-surv_5yr_5fu <- predict(km_fit, times = 5, 
-                        newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-surv_5yr_5fuox <- predict(km_fit, times = 5, 
-                          newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
+# surv_5yr_5fu <- predict(km_fit, times = 5, 
+#                         newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
+# surv_5yr_5fuox <- predict(km_fit, times = 5, 
+#                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 ```
 
 The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group. 
