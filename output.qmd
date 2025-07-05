@@ -38,7 +38,7 @@ library(broom.mixed)
 library(forestplot) # figure 4
 
 # additional analysis
-library(cmprsk)
+
 
 # load data
 load("actual data/Primary_endpoint_data.rda") 
@@ -94,10 +94,9 @@ We ran the code under below environment setting.
 sessionInfo()
 ```
 
-**R and Package Versions Used** 
-Initially, we proposed to conduct the reproduction using R version 3.1-2 with add-on packages coxme (version 2.2-3), prodlim (version 1.4.3), coin (1.0-23), and cmprsk (2.2-7) as presented in the original paper. We tried to install and downgrade to these versions to match the original environment. However, we encountered rendering issues with Markdown. Therefore, we proceeded with our current setup instead, using 
+**R and Package Versions Used**: Initially, we proposed to conduct the reproduction using R version 3.1-2 with add-on packages coxme (2.2-3), prodlim (1.4.3), and coin (1.0-23) as presented in the original paper. We tried to install and downgrade to these versions to match the original computational environment. However, we encountered rendering issues with Markdown. Therefore, we proceeded with our current setup instead, using R version 4.4.3 with packages coxme (2.2-22), prodlim (2025.4.28), coin (1.4-3) and survival (3.8-3).
 
-**Reproducibility Note**: All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden from the output but fully documented for transparency and replication.  
+**Reproducibility Note**: All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden from the output but fully documented for transparency and replication.
 
 ## Trial Profile & Data Overview
 
@@ -159,7 +158,7 @@ consort_plot(data = df.fig1,
                   cex = 0.7)
 ```
 
-The main patient counts are similar to the original figure: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
+The main patient counts are similar to the original figure 1: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
 
 However, some numbers do not match with the original consort diagram. **The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).**
 
@@ -167,13 +166,13 @@ Regardless of how many patients remained in their assigned group and completed e
 
 #### Comparison with Table 1
 
-In Table 1, we report the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only). We calculated:
+We reported the baseline demographics and clinical characteristics for patients in each trial arm (Investigational: 5-FU + Oxaliplatin; Control: 5-FU only) in this table. We calculated:
 
 -   the mean and standard deviation of age,
 -   the median and interquartile range for age,
 -   the counts and percentages for sex, ECOG performance status, clinical T category, clinical N category, overall clinical stage, tumour location from anal verge, histology, and tumour differentiation grade.
 
-These statistics are presented separately for each arm. No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
+No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
 
 ```{r functions for table 1}
 # Function to calculate percentages
@@ -378,7 +377,7 @@ tryCatch({
 knitr::kable(table1_data)
 ```
 
-**The table structure matches the original publication and we could reproduce Table 1 exactly as reported in Rödel et al. (2015)**
+**Our reproduced @table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
 
 ## Primary Endpoint Analysis
 
@@ -386,7 +385,7 @@ The primary endpoint analysis consists of stratified log-rank tests and mixed-ef
 
 #### Comparison with Table 2
 
-In Table 2, we report the distribution of first events contributing to the primary endpoint: DFS. We counted the number of:
+We reported the distribution of first events contributing to the primary endpoint: DFS. We counted the number of:
 
 -   Macroscopically incomplete local resections (R2)
 -   Locoregional recurrences as first events
@@ -539,7 +538,7 @@ knitr::kable(results_data)
 †Includes distant metastases as first event and those occurring together with or after occurrence of locoregional recurrences.\
 ‡Includes death due to intercurrent disease, unknown cause, treatment-related death, and death from secondary malignancy.\
 
-**The reproduced counts match the published table for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper. We suspect that the discrepancy is likely due to additional clinical review in original study.**
+**The reproduced counts in @table2 match the published table 2 for all rows except the cumulative locoregional recurrence. Our calculation shows 12 (2%) for the investigational group and 25 (4%) for the control group, versus 18 (3%) and 38 (6%) in the published paper.**
 
 #### Comparison Figure 2a
 
@@ -566,7 +565,7 @@ ggsurvplot(
 )
 ```
 
-**The reproduced curve and risk table are identical to the original ones in the published paper.**
+**The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 1, panel A in the published paper.**
 
 ### Stratified Log-rank Test
 
@@ -610,9 +609,9 @@ hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)  # Upper 95% CI
 p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
 ```
 
-The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 3)` with 95% CI: (`r round(hr_ci_lower,3)`, `r round(hr_ci_upper,3)`), p=`r round(p_value_cox, 3)`.
+The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 3)` with 95% CI: (`r round(hr_ci_lower,3)`, `r round(hr_ci_upper,3)`), p=`r round(p_value_cox, 3)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
 
-\[\[report and interpret HR(95%CI) and compare to numbers in the paper. See if they added p-value in the paper. If not, then we don't talk about it in text.\]\]
+**The numbers are identical to the ones reported in the paper:** *The HR for disease-free survival was 0·79 (95% CI 0·64–0·98, p=0·03, mixed eﬀects Cox model)*
 
 ### Proportional Hazards Assumption Check
 
@@ -696,7 +695,7 @@ surv_3yr_5fuox <- predict(km_fit2, times = 3,
 #                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 ```
 
-The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group. 
+The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group.
 
 ```{r Event Distribution by Treatment}
 #| label: fig-event-distribution
@@ -776,7 +775,7 @@ cat("Check the log-log plot for parallel lines. If lines are approximately paral
 
 ## Secondary Endpoints Analysis
 
-\[\[Overall description on secondary endpoints\]\]
+Secondary endpoints analysis consists of reporting overall survival, cumulative incidence of locoregional recurrences, and cumulative incidence of distant recurrences using Kaplan-Meier curve with a risk table per group. Secondary endpoints are considered exploratory and thus not tested statistically since the trial is powered on the primary endpoint. We first compared the distribution of all-cause deaths by cause with the original paper.
 
 #### Comparison with Table 3
 
@@ -919,7 +918,7 @@ ft
 
 #### Comparison with Figure 2b
 
-We presented the Kaplan–Meier curve for overall survival by treatment group for comparison with Figure 2b panel in paper.
+We presented the Kaplan–Meier curve for overall survival by treatment group for comparison with Figure 2b panel in the published paper.
 
 ```{r}
 #| label: fig-2b
@@ -938,7 +937,7 @@ ggsurvplot(
 )
 ```
 
-The overall shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).**
+The shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the the initial number at risk for the control group (622 vs. 623). Also, small differences in the control group numbers appear at later time points: 571 vs. 572 (year 1), 529 vs. 530 (year 2), 445 vs. 446 (year 3), 285 vs. 286 (year 4), 141 vs. 142 (year 5), and 1 vs. 2 at the last time point (year 6).**
 
 #### Comparison with Figure 3
 
@@ -1014,7 +1013,7 @@ Note that we didn't convert the cumulative incidence to percentage.
 
 #### Comparison with Figure 4
 
-In Figure 4, we reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint.
+We reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint.
 
 ```{r}
 # Prepare the data for the forest plot
@@ -1303,7 +1302,7 @@ forestplot(results.plot,
   fp_set_zebra_style("#f9f9f9")
 ```
 
-**Our reproduced forest plot is identical to the original figure reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.**
+**Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.**
 
 ## Additional analysis
 
@@ -1319,7 +1318,7 @@ CI.reg <- crr(df.fig3$DRtime,
 summary(CI.reg)
 ```
 
-Then we add a random intercept to each center-cN category.
+Then we added a random intercept to each center-cN category.
 
 ```{r, eval=FALSE}
 add<-comp.risk(Event(time,cause)~+1+cluster(id),data=multcif,cause=1,
