@@ -36,6 +36,7 @@ library(broom.mixed)
 
 # subgroup analysis
 library(forestplot) # figure 4
+library(tidyr)
 
 # additional analysis
 library(cmprsk)
@@ -661,7 +662,7 @@ time_5fuox <- log(time_points[valid_idx_5fuox])
 
 ```{r}
 #| label: fig-loglog-plot
-#| fig-cap: Log-Log Plot for Proportional Hazards Assessment
+#| fig-cap: Log-Log Plot for Proportional Hazards Assessment in Disease-free Survival
 
 
 # Create log-log plot for proportional hazards assessment
@@ -676,7 +677,7 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
        col = c("red", "blue"), lwd = 2, bty = "n")
 ```
 
-\[\[Maybe it's a violation...\]\] Although the lines crossed early in the follow-up time, there is no evidence on the violation of proportional hazard assumption during the major follow-up period.
+The lines crossed early in the follow-up time, so we think there is evidence on violation of the proportional hazard (PH) assumption. We notice that during the majority of follow-up period, the PH assumption is met. We are how sure how the violation of the PH assumption at early stage affects the model.  
 
 ```{r We calculated survival rates at key time points (3-year and 5-year) for both treatment groups.}
 #| label: survival-summary
@@ -693,83 +694,9 @@ surv_3yr_5fuox <- predict(km_fit2, times = 3,
 #                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
 ```
 
-The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group. 
-
-```{r Event Distribution by Treatment}
-#| label: fig-event-distribution
-#| fig-cap: DFS Events by Treatment Arm
-#| eval: false
+The probability of DFS at 3 years is `r surv_3yr_5fuox`% in the investigational group and `r surv_3yr_5fu`% in the control group.
 
 
-# Create bar plot showing distribution of DFS events by treatment arm
-# This visualization shows the number of events vs. censored observations
-# Helps assess balance between treatment groups in terms of event rates
-event_table <- table(CAOsurv$randarm, CAOsurv$DFSevent)
-barplot(event_table, beside = TRUE, 
-        main = "DFS Events by Treatment Arm",
-        xlab = "DFS Event", ylab = "Number of Patients",
-        col = c("lightblue", "lightcoral"),
-        legend.text = rownames(event_table))
-```
-
-```{r Follow-up Time Distribution}
-#| label: fig-followup-distribution
-#| fig-cap: Follow-up Time Distribution by Treatment Arm
-#| eval: false
-
-
-# Create boxplot showing distribution of follow-up times by treatment arm
-# This visualization helps assess balance in follow-up duration between groups
-# Important for ensuring comparability of survival analysis results
-boxplot(CAOsurv$DFStime/365 ~ CAOsurv$randarm,
-        main = "Follow-up Time Distribution",
-        xlab = "Treatment Arm", ylab = "Time (years)",
-        col = c("lightblue", "lightcoral"))
-```
-
-```{r}
-#| label: results-summary
-#| eval: false
-
-
-# COMPREHENSIVE SUMMARY OF PRIMARY ENDPOINT ANALYSIS
-# This section provides a complete summary of all key statistical findings
-# for the primary endpoint (disease-free survival) analysis
-
-cat("PRIMARY ENDPOINT ANALYSIS - DISEASE-FREE SURVIVAL\n")
-cat(paste(rep("-", 50), collapse=""), "\n", sep="")
-
-# STEP 1: Display study population characteristics
-cat(sprintf("Study Population: %d patients\n", nrow(CAOsurv)))
-cat(sprintf("- 5-FU: %d patients\n", sum(CAOsurv$randarm == "5-FU")))
-cat(sprintf("- 5-FU + Oxaliplatin: %d patients\n", sum(CAOsurv$randarm == "5-FU + Oxaliplatin")))
-
-# STEP 2: Overall event rate
-cat(sprintf("\nEvents: %d (%.1f%%)\n", sum(CAOsurv$DFSevent), 
-            100 * sum(CAOsurv$DFSevent) / nrow(CAOsurv)))
-
-# STEP 3: Key survival rates at clinically relevant time points
-cat("\nSURVIVAL RATES:\n")
-cat(sprintf("3-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_3yr_5fu, surv_3yr_5fuox))
-cat(sprintf("5-year DFS: 5-FU %.1f%% vs 5-FU+Oxaliplatin %.1f%%\n", surv_5yr_5fu, surv_5yr_5fuox))
-
-# STEP 4: Stratified log-rank test results
-cat("\nSTRATIFIED LOG-RANK TEST:\n")
-cat(sprintf("P-value: %.6f\n", pvalue(lr_test)))
-cat(sprintf("Significance level: %s\n", ifelse(pvalue(lr_test) < 0.05, "Significant (p < 0.05)", "Not significant (p >= 0.05)")))
-
-# STEP 5: Mixed-effects Cox model results (accounts for clustering)
-cat("\nMIXED-EFFECTS COX MODEL:\n")
-cat(sprintf("Hazard Ratio: %.3f (95%% CI: %.3f - %.3f)\n", hr, hr_ci_lower, hr_ci_upper))
-cat(sprintf("P-value: %.6f\n", p_value_cox))
-cat(sprintf("Interpretation: 5-FU + Oxaliplatin %s the hazard by %.1f%% compared to 5-FU alone\n",
-            ifelse(hr < 1, "reduces", "increases"),
-            abs((hr - 1) * 100)))
-
-# STEP 6: Model assumptions assessment guidance
-cat("\nPROPORTIONAL HAZARDS ASSUMPTION:\n")
-cat("Check the log-log plot for parallel lines. If lines are approximately parallel, the proportional hazards assumption is reasonable.\n")
-```
 
 ## Secondary Endpoints Analysis
 
@@ -939,7 +866,9 @@ The overall shape of the overall survival curve and risk table are quite similar
 
 #### Comparison with Figure 3
 
-The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
+We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. The figure in the paper seems to be generated from `gglpot2` pakcage, so we decided to plot the cumulative incidence using the `survminer` package. This package doesn't consider competing risk. We know that the cumulative incidence function uses the cause-specific hazard function, so we censored participants who experienced the competing risk in the data. Note that the cumulative incidence is reported in probability instead of percentage.  
+
+The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence. 
 
 ```{r}
 df.fig3 <- CAOsurv %>%
@@ -961,13 +890,6 @@ df.fig3 <- CAOsurv %>%
 ```{r}
 #| label: fig-3a
 #| fig-cap: Cumulative incidence of locoregional recurrences in the intention-to-treat population
-
-# alternative:
-CompRiskFrame <- data.frame(time=1:100,event=rbinom(100,2,.5),X=rbinom(100,1,.5)) 
-crFit <- prodlim(Hist(time,event)~X,data=CompRiskFrame) 
-
-summary(crFit,cause=2) 
-plot(crFit,cause=2)
 
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
@@ -1003,11 +925,128 @@ ggsurvplot(
   legend.title = "",
   legend.labs = c("Investigational group", "Control group")
 )
+
+
+
+
+# cuminc2 <- cuminc(ftime = df.fig3$DRtime/365, fstatus = df.fig3$DRcmptrsk, group = df.fig3$randarm)
 ```
 
-Note that we didn't convert the cumulative incidence to percentage.
+We found that the numbers at risk at year 1, 3, and 5 have one person off in control group, given by the `survminer` package. In order to check the reason, we use an alternative way to plot the cumulative incidence using the outcome variable with competing risks via the `prodlim` package.
+
+```{r}
+#| label: fig-alt-fig3b
+#| fig-cap: Alternative plot for cumulative incidence of distant recurrence (by the prodlim package)
+
+ crFit <- prodlim(Hist(DRtime/365,DRcmptrsk)~randarm, data=df.fig3) 
+ plot(crFit,
+      cause=1,
+      ylim = c(0,0.5),
+      legend.x = "topleft",
+      confint = F,
+      atrisk.at = 0:6)
+```
+
+As shown in the above plot, the numbers at risk are the same from the `prodlim` package. As the final confirmation, we manually calculated the number at risk again. In our manual calculation, participants who experienced any event at each year mark are excluded from the number at risk for that year. 
+
+```{r}
+#| label: tbl-DR-number-at-risk
+#| tbl-cap: Number at risk of distant recurrence per treatment group
+
+df.fig3 <- df.fig3 %>%
+  mutate(excludeyear = case_when((DRcmptrsk = 1 & DRtime/365 <=1)|(DRcmptrsk != 1 & DRtime/365 <=1) ~ 1, #exclude at y1
+                                 (DRcmptrsk = 1 & DRtime/365 <=2)|(DRcmptrsk != 1 & DRtime/365 <=2) ~ 2, #exclude at y2
+                                 (DRcmptrsk = 1 & DRtime/365 <=3)|(DRcmptrsk != 1 & DRtime/365 <=3) ~ 3, #exclude at y3
+                                 (DRcmptrsk = 1 & DRtime/365 <=4)|(DRcmptrsk != 1 & DRtime/365 <=4) ~ 4, #exclude at y4
+                                 (DRcmptrsk = 1 & DRtime/365 <=5)|(DRcmptrsk != 1 & DRtime/365 <=5) ~ 5, #exclude at y5
+                                 (DRcmptrsk = 1 & DRtime/365 <=6)|(DRcmptrsk != 1 & DRtime/365 <=6) ~ 6, #exclude at y6
+                                 TRUE ~ 9),
+         ar0 = 1,
+         ar1 = case_when(excludeyear>1 ~ 1, TRUE ~ 0),
+         ar2 = case_when(excludeyear>2 ~ 1, TRUE ~ 0),
+         ar3 = case_when(excludeyear>3 ~ 1, TRUE ~ 0),
+         ar4 = case_when(excludeyear>4 ~ 1, TRUE ~ 0),
+         ar5 = case_when(excludeyear>5 ~ 1, TRUE ~ 0),
+         ar6 = case_when(excludeyear>6 ~ 1, TRUE ~ 0))
+
+df.fig3 %>%
+  summarize(y0=sum(ar0),
+            y1=sum(ar1),
+            y2=sum(ar2),
+            y3=sum(ar3),
+            y4=sum(ar4),
+            y5=sum(ar5),
+            y6=sum(ar6),
+            .by = randarm) %>%
+  knitr::kable()
+```
+
+The numbers at risk match with the original paper in our manual calculation. Based on this exploration, we found that both `survminer` and `prodlim` package includes participants who experienced events at each time mark in the number at risk count.
+
 
 ## Subgroup analysis
+
+During the reproduction of the forestplot, we found a discrepancy in the categorization of age. The reported groups were "<61, 61-70, and >70." We found the numbers of events and total sample sizes per subgroup are different from the paper. The number of event and total sample size following the reported age groups in the paper are shown below.
+
+```{r}
+#| label: tbl-age-old
+#| tbl-cap: Number of events and total sample size following the reported age groups in the paper
+
+# Verify counts by age category
+df.age <- CAOsurv %>%
+  mutate(dfs_time = DFStime,
+         dfs_status = as.numeric(CAOsurv$DFSevent),
+         # new age
+         age_cat = cut(age,
+                      breaks = c(0, 60, 70, 100),
+                      labels = c("\u226460", ">60-70", ">70"),
+                      right = TRUE),
+         # old age
+         age_cat_og = case_when(age<61 ~ "<61",
+                                age<=70 ~ "61-70",
+                                is.na(age) ~ NA_character_,
+                                TRUE ~ ">70"),
+         # reverse treatment group
+         randarm.re = randarm,
+         randarm.re = relevel(randarm.re, "5-FU + Oxaliplatin"))
+
+# tabulate event n/total n per treatment by old age
+df.age %>%
+  group_by(age_cat_og, randarm.re) %>%
+  summarize(
+    events = sum(dfs_status == 1, na.rm = TRUE),
+    total = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(`events/n` = paste(events, total, sep = "/")) %>%
+  pivot_wider(id_cols = age_cat_og,
+              names_from = randarm.re,
+              values_from = `events/n`) %>%
+  knitr::kable()
+```
+
+
+We found that if we use the `cut()` function and set cut-offs at 0, 60, 70, and 100, we will get the same event numbers and total n (see table below). The `cut` function uses right-inclusive range when cutting the variable. As a result, **the age levels in the subgroup analysis is "$\leq60$, >60-70, and >70." **
+
+```{r}
+#| label: tbl-age-new
+#| tbl-cap: Number of events and total sample size per actual age groups
+
+df.age %>%
+  group_by(age_cat, randarm.re) %>%
+    summarize(
+      events = sum(dfs_status == 1, na.rm = TRUE),
+      total = n(),
+      .groups = 'drop'
+    ) %>%
+  mutate(`events/n` = paste(events, total, sep = "/")) %>%
+  pivot_wider(id_cols = age_cat,
+              names_from = randarm.re,
+              values_from = `events/n`) %>%
+  knitr::kable()
+```
+
+
 
 #### Comparison with Figure 4
 
@@ -1023,8 +1062,7 @@ prepare_subgroup_analysis <- function() {
   
   # The figure title mentions "intention-to-treat population", so we'll use the full dataset
   # We'll use the DFS endpoint which matches the figure title
-  cat("Number of patients in the intention-to-treat population:", nrow(CAOsurv), "\n")
-  
+
   # Extract DFS time and status from the Surv object
   CAOsurv$dfs_time <- CAOsurv$DFStime
   CAOsurv$dfs_status <- as.numeric(CAOsurv$DFSevent)
@@ -1040,23 +1078,11 @@ prepare_subgroup_analysis <- function() {
   # Create age categories based on the optimized cutoffs we found
   # Through optimization, the best cutoffs to match the published figure are:
   # Lower cutoff: 60 (for Age <61)
-  # Upper cutoff: 69 (for Age 61-70)
+  # Upper cutoff: 69 (for Age >60-70)
   CAOsurv$age_cat <- cut(CAOsurv$age, 
                         breaks = c(0, 60, 70, 100), 
-                        labels = c("<61", "61-70", ">70"),
+                        labels = c("\u226460", ">60-70", ">70"),
                         right = TRUE)
-  
-  # Verify counts by age category
-  age_counts <- CAOsurv %>%
-    group_by(age_cat, treatment) %>%
-    summarize(
-      events = sum(dfs_status == 1, na.rm = TRUE),
-      total = n(),
-      .groups = 'drop'
-    )
-  
-  print("Counts by age category and treatment (optimized cutoffs):")
-  print(age_counts)
   
   # Create a data frame to store hazard ratios and confidence intervals
   results <- data.frame()
@@ -1138,8 +1164,8 @@ prepare_subgroup_analysis <- function() {
   }
   
   # Calculate HRs for age subgroups (using the optimized age categories)
-  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '<61'", "Age <61"))
-  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '61-70'", "Age 61-70"))
+  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '\u226460'", "Age \u226460"))
+  results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '>60-70'", "Age >60-70"))
   results <- rbind(results, calculate_hr(CAOsurv, "age_cat == '>70'", "Age >70"))
   
   # Sex
@@ -1195,7 +1221,7 @@ prepare_subgroup_analysis <- function() {
   
   # Create the exact order as in the figure
   results$order <- match(results$label, c(
-    "Age <61", "Age 61-70", "Age >70",
+    "Age \u226460", "Age >60-70", "Age >70",
     "Male", "Female",
     "ECOG 0", "ECOG 1-2", 
     "0-5 cm", ">5-10 cm", ">10 cm",
@@ -1225,9 +1251,9 @@ prepare_subgroup_analysis <- function() {
   results$hr_diff <- NA
   
   # Add published values for age categories to compare
-  age_indices <- which(results$label %in% c("Age <61", "Age 61-70", "Age >70"))
-  results$hr_published[age_indices[1]] <- 0.61  # Age <61
-  results$hr_published[age_indices[2]] <- 0.87  # Age 61-70
+  age_indices <- which(results$label %in% c("Age \u226460", "Age >60-70", "Age >70"))
+  results$hr_published[age_indices[1]] <- 0.61  # Age <=60
+  results$hr_published[age_indices[2]] <- 0.87  # Age >60-70
   results$hr_published[age_indices[3]] <- 1.06  # Age >70
   
   # Calculate differences for age categories
@@ -1238,8 +1264,8 @@ prepare_subgroup_analysis <- function() {
   }
   
   # Print differences for debugging
-  cat("\nComparison with published values for age categories:\n")
-  print(results[age_indices, c("label", "hr", "hr_published", "hr_diff", "events_treatment", "n_treatment", "events_control", "n_control")])
+  # cat("\nComparison with published values for age categories:\n")
+  # print(results[age_indices, c("label", "hr", "hr_published", "hr_diff", "events_treatment", "n_treatment", "events_control", "n_control")])
   
   # Remove comparison columns before returning results
   results$hr_published <- NULL
@@ -1302,7 +1328,82 @@ forestplot(results.plot,
 
 **Our reproduced forest plot is identical to the original figure reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.**
 
+
+
+
+
 ## Additional analysis
+
+### Overall survival
+
+
+```{r}
+#| label: tbl-os-cox
+#| tbl-cap: Mixed-effects Cox model on overall survival using center-cN strata
+
+
+cm_os <- coxme(Surv(OStime, OSevent) ~ randarm + (1 | s_nzsmall), 
+                      data = CAOsurv)
+
+# Extract hazard ratio and confidence interval for treatment effect
+tb_cm_os <- data.frame(
+  hr = round(exp(coef(cm_os)),3),  # Exponentiate to get hazard ratio
+  log_hr_se = round(sqrt(vcov(cm_os)[1,1]),3)) %>%  # Standard error of log hazard ratio
+  mutate(
+    hr_ci_lower = round(exp(coef(cm_os) - 1.96 * log_hr_se),3),  # Lower 95% CI
+    hr_ci_upper = round(exp(coef(cm_os) + 1.96 * log_hr_se),3),   # Upper 95% CI
+    p_value = round(2 * pnorm(-abs(coef(cm_os) / log_hr_se)), 3)  # Two-sided p-value  
+  )
+
+knitr::kable(tb_cm_os)
+```
+
+We then check the PH assumption for the overall survival using log-log plot.
+
+
+```{r}
+#| label: fig-log-log-os
+#| fig-cap: Log-Log Plot for Proportional Hazards Assessment in Overall Survival
+
+cm_os_fit <- prodlim(Hist(OStime / 365, OSevent) ~ randarm_plot + cluster(s_nzsmall), data = CAOsurv)
+
+# STEP 3: Create fine-grained time points for smooth log-log curves
+# Use 1000 time points to create smooth curves for assessment
+# time_points <- seq(0, max(CAOsurv$OStime)/365, length.out = 1000)
+
+# STEP 4: Extract survival probabilities at all time points
+# Predict survival probabilities for each treatment group
+surv_5fu_os <- predict(cm_os_fit, times = time_points, 
+                    newdata = data.frame(randarm_plot = "5-FU"))[[1]]
+surv_5fuox_os <- predict(cm_os_fit, times = time_points, 
+                      newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]]
+
+# STEP 5: Calculate log-log transformation for proportional hazards check
+# Remove boundary values (0 and 1) to avoid -Inf in log-log transformation
+# Proportional hazards assumption: log(-log(S(t))) curves should be parallel
+
+valid_idx_5fu <- surv_5fu_os > 0 & surv_5fu_os < 1
+valid_idx_5fuox <- surv_5fuox_os > 0 & surv_5fuox_os < 1
+
+loglog_5fu <- log(-log(surv_5fu_os[valid_idx_5fu]))
+loglog_5fuox <- log(-log(surv_5fuox_os[valid_idx_5fuox]))
+time_5fu <- log(time_points[valid_idx_5fu])
+time_5fuox <- log(time_points[valid_idx_5fuox])
+
+# log-log plot
+plot(time_5fuox, loglog_5fuox, type = "l", col = "red", lwd = 2,
+     xlab = "log(time (years))", ylab = "log(-log(S(t)))",
+     main = "Log-Log Plot (Proportional Hazards Check)",
+     ylim = range(c(loglog_5fu, loglog_5fuox), na.rm = TRUE))
+lines(time_5fu, loglog_5fu, col = "blue", lwd = 2)
+legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"), 
+       col = c("red", "blue"), lwd = 2, bty = "n")
+```
+
+The Cox model is not suitable for overall survival in this data.
+
+
+### Distant recurrence
 
 We first fitted a Fine-Gray model without considering the stratified randomization.
 
