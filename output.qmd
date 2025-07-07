@@ -614,11 +614,13 @@ hr_ci_lower <- exp(coef(cox_me_model) - 1.96 * hr_se)  # Lower 95% CI
 hr_ci_upper <- exp(coef(cox_me_model) + 1.96 * hr_se)  # Upper 95% CI
 p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
 
-summary(cox_me_model)
-confint(cox_me_model)
+# summary(cox_me_model)
+# confint(cox_me_model)
+
+# coefci(cox_me_model)
 ```
 
-The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 3)` with 95% CI: (`r round(hr_ci_lower,3)`, `r round(hr_ci_upper,3)`), p=`r round(p_value_cox, 3)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
+The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 2)` with 95% CI: (`r round(hr_ci_lower,2)`, `r round(hr_ci_upper,2)`), p=`r round(p_value_cox, 2)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
 
 **The numbers are identical to the ones reported in the paper:** *The HR for disease-free survival was 0·79 (95% CI 0·64–0·98, p=0·03, mixed eﬀects Cox model)*
 
