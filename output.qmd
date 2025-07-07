@@ -40,7 +40,7 @@ library(tidyr)
 library(cmprsk)
 
 # load data
-load("actual data/Primary_endpoint_data.rda") 
+load("actual_data/Primary_endpoint_data.rda") 
 ```
 
 ## Introduction
@@ -94,8 +94,6 @@ sessionInfo()
 ```
 
 **R and Package Versions Used**: Initially, we proposed to conduct the reproduction using R version 3.1-2 with add-on packages coxme (2.2-3), prodlim (1.4.3), coin (1.0-23), and cmprsk (2.2-7) as presented in the original paper. We tried to install and downgrade to these versions to match the original computational environment. However, we encountered CPU compatibility issue on Mac and rendering issue with Markdown in Windows. Therefore, we proceeded with our current setup instead, using R version 4.4.3 with packages coxme (2.2-22), prodlim (2025.4.28), coin (1.4-3), survival (3.8-3), and cmprsk (2.2-12).
-
-
 
 ## Trial Profile & Data Overview
 
@@ -685,7 +683,6 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 
 The lines crossed early in the follow-up time, so we think there is evidence on violation of the proportional hazard (PH) assumption. We notice that during the majority of follow-up period, the PH assumption is met. We are not sure how the violation of the PH assumption at early stage affects the model.
 
-
 ```{r}
 #| label: survival-summary
 
@@ -864,7 +861,7 @@ ggsurvplot(
 )
 ```
 
-The shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the number at risk in the control group at all year marks. Our number is one participant fewer than reported in the paper.**  To confirm this mismatch, we manually calculated the number at risk per treatment group for overall survival
+The shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the number at risk in the control group at all year marks. Our number is one participant fewer than reported in the paper.** To confirm this mismatch, we manually calculated the number at risk per treatment group for overall survival
 
 ```{r}
 #| label: tbl-OS-number-at-risk
