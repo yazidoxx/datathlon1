@@ -383,7 +383,7 @@ tryCatch({
 knitr::kable(table1_data)
 ```
 
-**Our reproduced @table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
+**Our reproduced @tbl-table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
 
 ## Primary Endpoint Analysis
 
@@ -573,7 +573,7 @@ ggsurvplot(
 summary(km1, times = 3)
 ```
 
-**The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 1, panel A in the published paper.**
+**The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 2, panel A in the published paper.**
 
 ### Stratified Log-rank Test
 
