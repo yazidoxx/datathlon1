@@ -13,7 +13,7 @@ editor: visual
 ---
 
 ```{r library and data, include=FALSE}
-here::i_am("output.qmd") # doesn't work on the old `here`
+here::i_am("upl/output.qmd") # doesn't work on the old `here`
 library(here) # call on the data using a relative directory
 
 # trial profile & data overview
@@ -569,6 +569,8 @@ ggsurvplot(
   legend.title = "",
   legend.labs = c("Investigational group", "Control group")
 )
+
+summary(km1, times = 3)
 ```
 
 **The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 2, panel A in the published paper.**
@@ -588,6 +590,7 @@ lr_test <- logrank_test(Surv(DFStime, DFSevent) ~ randarm | s_nzsmall,
                        data = CAOsurv,
                        distribution = approximate(nresample = 100000))
 
+print(lr_test)
 ```
 
 Authors reported an exact stratified log-rank test; however, we encountered an error `cannot compute exact p-values with blocks` when using the exact distribution in the test. Instead, we applied an approximative (Monte Carlo) log-rank test. The result showed that the DFS was different in the two treatment groups (p = `r round(pvalue(lr_test), 3)`), same as in the paper.
@@ -605,6 +608,10 @@ We fitted a mixed-effects Cox proportional hazards model with random intercepts 
 # This accounts for clustering within centers and baseline prognostic factors
 cox_me_model <- coxme(Surv(DFStime/365, DFSevent) ~ randarm + (1 | s_nz), 
                       data = CAOsurv)
+
+cox_strat <- coxph(Surv(DFStime/365, DFSevent) ~ randarm + strata(s_nz), data = CAOsurv)
+summary(cox_strat)
+summary(cox_me_model)
 
 # STEP 3: Extract and calculate key statistical measures
 # Extract hazard ratio and confidence interval for treatment effect
@@ -717,18 +724,17 @@ The lines crossed early in the follow-up time, so we think there is evidence on 
 #| label: survival-summary
 
 # Calculate survival rates at key time points using predict function
-surv_3yr_5fu <- predict(km_fit2, times = 3, 
-                        newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-surv_3yr_5fuox <- predict(km_fit2, times = 3, 
-                          newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
+surv_3yr <- summary(km_fit2, times = 3)
+surv_3yr_5fu <- surv_3yr[2,"surv"] * 100
+surv_3yr_5fu_upci <- surv_3yr[2,"upper"] * 100
+surv_3yr_5fu_loci <- surv_3yr[2,"lower"] * 100
 
-# surv_5yr_5fu <- predict(km_fit, times = 5, 
-#                         newdata = data.frame(randarm_plot = "5-FU"))[[1]] * 100
-# surv_5yr_5fuox <- predict(km_fit, times = 5, 
-#                           newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]] * 100
+surv_3yr_5fuox <- surv_3yr[1,"surv"] * 100
+surv_3yr_5fuox_upci <- surv_3yr[1,"upper"] * 100
+surv_3yr_5fuox_loci <- surv_3yr[1,"lower"] * 100
 ```
 
-The probability of DFS at 3 years is `r round(surv_3yr_5fuox,2)`% in the investigational group and `r round(surv_3yr_5fu,2)`% in the control group. **These probabilities match the numbers reported in the paper.**
+The probability of DFS at 3 years is `r round(surv_3yr_5fuox)`% (95% CI: `r round(surv_3yr_5fuox_loci)`%, `r round(surv_3yr_5fuox_upci)`%) in the investigational group and `r round(surv_3yr_5fu)`% (95% CI: `r round(surv_3yr_5fu_loci)`%, `r round(surv_3yr_5fu_upci)`%)  in the control group. **These probabilities match the numbers reported in the paper.**
 
 ## Secondary Endpoints Analysis
 
@@ -940,17 +946,17 @@ The original Figure 3 in the paper shows the cumulative incidence functions for 
 # prepare data
 df.fig3 <- CAOsurv %>%
   mutate(LRplot = case_when(LRtype == "Tod" ~ 0,
-                             LRtype == "censored" ~ 0,
-                             is.na(LRtype) ~ NA_real_,
-                             TRUE ~ 1),
+                            LRtype == "censored" ~ 0,
+                            is.na(LRtype) ~ NA_real_,
+                            TRUE ~ 1),
          # DRcausesp = case_when(is.na(DRtype) ~ NA_real_,                         grepl("Fernmeta|Fernmeta_Progression|OPPFM|Progression|Progression_OPPFM", DRtype) ~ 1,
          #                        TRUE ~ 0),
          DRcmptrsk = case_when(DRtype == "Tod" ~ 2, # who didn't have distant recurrence but died
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1),
          DRplot = case_when(DRtype == "Tod" ~ 0, # who didn't have distant recurrence but died
-                               grepl("censored", DRtype) ~ 0,
-                               TRUE ~ 1))
+                            grepl("censored", DRtype) ~ 0,
+                            TRUE ~ 1))
 
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
@@ -1385,7 +1391,9 @@ CAOsurv %>%
   knitr::kable()
 ```
 
-In the TNM stage variable, there is also a level of Stage IV which is not presented in Figure 4 in the paper. We were not able to figure out why those participants were removed from the analysis.
+From the above table, we can see that the ypT category didn't have the ypTis and ypT1 levels merged in the subgroup analysis. The ypT1 group itself has 39 participants in the interventional and control groups each.
+
+In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper. We were not able to figure out why those participants were removed from the analysis.
 
 ```{r}
 #| label: tbl-tnm
