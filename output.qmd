@@ -383,7 +383,7 @@ tryCatch({
 knitr::kable(table1_data)
 ```
 
-**Our reproduced @table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
+**Our reproduced @tbl-table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
 
 ## Primary Endpoint Analysis
 
@@ -571,7 +571,7 @@ ggsurvplot(
 )
 ```
 
-**The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 1, panel A in the published paper.**
+**The reproduced curve and risk table in @fig-2a are identical to the original ones in the figure 2, panel A in the published paper.**
 
 ### Stratified Log-rank Test
 
@@ -660,7 +660,6 @@ CAOsurv %>%
 ### Proportional Hazards Assumption Check
 
 We assessed the proportional hazards assumption using log-log plots of the survival curves by treatment group.
-
 
 ```{r}
 #| label: fig-loglog-plot
@@ -933,7 +932,6 @@ The numbers at risk match with the original paper in our manual calculation. **A
 We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. The figure in the paper seems to be generated from `gglpot2` pakcage, so we decided to plot the cumulative incidence using the `survminer` package. This package doesn't consider competing risk. We know that the cumulative incidence function uses the cause-specific hazard function, so we censored participants who experienced the competing risk in the data. Note that the cumulative incidence is reported in probability instead of percentage.
 
 The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
-
 
 ```{r}
 #| label: fig-3a
@@ -1371,8 +1369,6 @@ forestplot(results.plot,
                                 xlab = gpar(cex=1))) %>%
   fp_set_zebra_style("#f9f9f9")
 ```
-
-
 
 **\[\[Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.\]\]**
 
