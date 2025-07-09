@@ -164,7 +164,7 @@ consort_plot(data = df.fig1,
                   cex = 0.7)
 ```
 
-The main patient counts are similar to the original figure 1: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
+The main patient counts are similar to the published figure 1: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
 
 However, some numbers do not match with the original consort diagram. **The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).**
 
@@ -181,7 +181,7 @@ We reported the baseline demographics and clinical characteristics for patients 
 No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
 
 ```{r}
-#| label: table1
+#| label: tbl-table1
 #| tbl-cap: Baseline characteristics
 
 # Function to calculate percentages
@@ -1502,4 +1502,3 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```
 
 The Cox model is not suitable for overall survival in this data.
-
