@@ -959,7 +959,7 @@ df.fig3 <- CAOsurv %>%
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
 cuminc(Surv(lrtime, LRplot_f) ~ randarm, df.fig3) %>%
-  ggcuminc(outcome = "locoregional recurrence") +
+  ggcuminc(outcome = 1) +
   add_confidence_interval() +
   add_risktable() +
   labs(y="Cumulative incidecne of \nlocoregional recurrence") +
@@ -1020,7 +1020,7 @@ cuminc(Surv(lrtime2, LRplot_new) ~ randarm, df.fig3) %>%
 #| fig-cap: Cumulative incidence of distant recurrences in the intention-to-treat population
 
 cuminc(Surv(drtime, DRcmptrsk) ~ randarm, df.fig3) %>%
-  ggcuminc(outcome = "distant recurrence") +
+  ggcuminc(outcome = 1) +
   add_confidence_interval() +
   add_risktable() +
   labs(y = "Cumulative incidence \nof distant recurrence")+
