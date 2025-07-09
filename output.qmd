@@ -55,7 +55,7 @@ On this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 **Secondary trial objectives** were to evaluate the efficacy of additional oxaliplatin to the standard regimen on: 1) overall survival which is defined as time from randomisation to death from any cause and 2) incidence of local and distant recurrences which is defined as the time between randomization and occurrence of any locoregional and distant recurrence, respectively, irrespective of whether this was a first event or not.
 
-\[\[additional analysis\]\]
+**Additional analysis** was performed to extend the original analysis by applying the same mixed-effects Cox model framework to overall survival and the proportional hazards assumption was checked using log–log survival plots. 
 
 ### Tables and Figures to reproduce:
 
