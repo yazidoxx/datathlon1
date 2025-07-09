@@ -25,9 +25,11 @@ library(prodlim) # median follow-up time, survival func
 ## table 2
 library(flextable)
 
-## figure 2 & 3
+## figure 2
 library(survival)
 library(survminer)
+
+## figrue 3
 library(tidycmprsk)  
 library(ggsurvfit)
 
@@ -39,7 +41,7 @@ library(forestplot) # figure 4
 library(tidyr)
 
 # additional analysis
-library(cmprsk)
+# library(cmprsk)
 
 # load data
 load("actual_data/Primary_endpoint_data.rda") 
@@ -89,7 +91,7 @@ On this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 ### Reproducibility Note
 
-The reproduction locates on [our GitHub page](https://github.com/yazidoxx/datathlon1) as well as our statistical analysis plan. All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden in the output but fully documented for transparency and replication. Readers can click the code tab in the file for the code. We ran the code under below environment setting.
+The reproduction locates on [our GitHub page](https://github.com/yazidoxx/datathlon1) as well as our [statistical analysis plan](https://github.com/yazidoxx/datathlon1/blob/main/SAP_team1.pdf). All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden in the output but fully documented for transparency and replication. Readers can click the code tab in the file for the code. We ran the code under below environment setting.
 
 ```{r}
 sessionInfo()
@@ -937,7 +939,7 @@ The numbers at risk match with the original paper in our manual calculation. **A
 
 #### Comparison with Figure 3
 
-We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. We decided to plot the cumulative incidence using the `tidycmprsk` package (Thanks to Han). 
+We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. We decided to plot the cumulative incidence using the `tidycmprsk` package (Thanks to Han).
 
 The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
 
@@ -951,7 +953,7 @@ df.fig3 <- CAOsurv %>%
                             LRtype == "censored" ~ 0,
                             is.na(LRtype) ~ NA_real_,
                             TRUE ~ 1),
-         LRplot = factor(LRplot),
+         LRplot_f = factor(LRplot),
          DRcmptrsk = case_when(DRtype == "Tod" ~ 2, # who didn't have distant recurrence but died
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1),
@@ -967,12 +969,61 @@ df.fig3 <- CAOsurv %>%
 
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
-cuminc(Surv(lrtime, LRplot) ~ randarm, df.fig3) %>%
+cuminc(Surv(lrtime, LRplot_f) ~ randarm, df.fig3) %>%
   ggcuminc() +
   add_confidence_interval() +
   add_risktable() +
   scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 ```
+
+We received additional data after we generated the above plot. With the additional data, the cumulative incidence of locoregional recurrence in plotted below.
+
+```{r}
+#| label: fig-fig3a-new
+#| fig-cap: Cumulative incidence of locoregional recurrences in the intention-to-treat population with additional data
+
+### new follow-up data from WiSP 2015-02-26
+add_LR <-
+  structure(list(patnr = c(13120L, 13122L, 18017L, 22007L, 24007L, 
+                           26003L, 27016L, 30017L, 54007L, 57004L, 62003L, 70006L, 70016L, 
+                           71001L, 88001L, 88002L, 15002L, 41006L, 11020L), rez_dat = structure(list(
+                             sec = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 
+                             min = c(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L),
+                             hour = c(0L, 0L, 0L, 0L,  0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L), 
+                             mday = c(24L, 7L, 9L, 10L, 5L, 15L, 18L, 14L, 17L, 18L, 20L, 18L, 3L, 14L, 3L, 3L, 9L, 8L, 23L), 
+                             mon = c(8L, 8L, 7L, 6L, 4L, 10L, 9L, 3L, 9L, 4L, 9L, 4L, 4L, 0L, 0L, 4L,  10L, 5L, 1L), 
+                             year = c(110L, 110L, 111L, 113L, 108L, 107L, 111L, 109L, 114L, 110L, 109L, 111L, 111L, 111L, 111L, 111L,  109L, 110L, 112L), 
+                             wday = c(5L, 2L, 2L, 3L, 1L, 4L, 2L, 2L, 5L, 2L, 2L, 3L, 2L, 5L, 1L, 2L, 1L, 2L, 4L), 
+                             yday = c(266L, 249L, 220L, 190L, 125L, 318L, 290L, 103L, 289L, 137L, 292L, 137L, 122L, 13L, 2L, 122L, 312L, 158L, 53L), isdst = c(1L, 1L, 1L, 1L, 1L, 0L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 1L, 0L, 1L, 0L), 
+                             zone = c("CEST", "CEST", "CEST", "CEST", "CEST",  "CET", "CEST", "CEST", "CEST", "CEST", "CEST", "CEST", "CEST", "CET", "CET", "CEST", "CET", "CEST", "CET"), 
+                             gmtoff = c(NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_)), 
+                             .Names = c("sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst", "zone", "gmtoff"), 
+                             class = c("POSIXlt", "POSIXt"))), .Names = c("patnr","rez_dat"), row.names = c(NA, -19L), class = "data.frame") 
+
+colnames(add_LR)<- c("patnr", "LReventtime")
+
+df.fig3 <- left_join(df.fig3, add_LR, by = "patnr")
+
+newid <- add_LR$patnr
+
+df.fig3 <- df.fig3 %>%
+  mutate(LRplot_new = case_when(patnr %in% newid ~ 1, 
+                                TRUE ~ LRplot),
+         LRplot_new = factor(LRplot_new),
+         LReventtime = case_when(patnr %in% newid ~ LReventtime.y,
+                                 TRUE ~ LReventtime.x),
+         lrtime2 = difftime(LReventtime, melde_dat, units = "days")/365)
+
+cuminc(Surv(lrtime2, LRplot_new) ~ randarm, df.fig3) %>%
+  ggcuminc() +
+  # add_confidence_interval() +
+  add_risktable() +
+  scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
+
+```
+
+The plot and the event numbers per group match with the Figure 3a and Table 2. The confidence interval in control group becomes very wide at the end. For a better visualization of the cumulative incidence, we didn't plot the confidence interval.  
+
 
 ```{r}
 #| label: fig-3b
@@ -984,7 +1035,6 @@ cuminc(Surv(drtime, DRcmptrsk) ~ randarm, df.fig3) %>%
   add_risktable() +
   scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 ```
-
 
 Similar issue on the numbers at risk at year 1, 3, and 5 was identified as in the comparison with Figure 2b. Our number is one person off in control group, given by the `tidycmprsk` package. In order to check the reason, we use an alternative way to plot the cumulative incidence using the outcome variable with competing risks via the `prodlim` package.
 
@@ -1492,3 +1542,27 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```
 
 The Cox model is not suitable for overall survival in this data.
+
+## GitHub Repository
+
+For complete code and reproducibility materials, scan the QR code below or visit our GitHub repository:
+
+```{r}
+#| label: github-qr
+#| fig-cap: QR Code linking to GitHub repository
+#| fig-align: center
+
+# Generate QR code for GitHub repository
+library(qrcode)
+
+# Create QR code for the GitHub repository
+github_url <- "https://github.com/yazidoxx/datathlon1"
+qr <- qr_code(github_url)
+
+# Plot the QR code
+plot(qr, col = c("white", "black"))
+```
+
+**GitHub Repository**: https://github.com/yazidoxx/datathlon1
+
+This repository contains all the code, data, and documentation used in this reproduction study.
