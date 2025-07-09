@@ -112,7 +112,7 @@ The median follow-up time of this study is `r round(o_fu[[4]][2],2)` months (int
 
 #### Comparison with Figure 1
 
-We visualized the CONSORT diagram (trial profile) as presented in the original publication with some minor differences. Our version includes the main patient flow: the total number of randomized patients, the allocation to the investigational group (5-FU + Oxaliplatin) and the control group (5-FU), the number of patients who did not undergo surgery with detailed reasons (death, progression before surgery, toxicity, surgery refusal, missing data), the number of patients who did not receive adjuvant chemotherapy with reasons, changes during adjuvant chemotherapy (switched arm or other treatment), and the final number who received treatment as randomized.
+The CONSORT diagram (trial profile) presents how participants moved through each stage of the trial. Our version includes the main patient flow: the total number of randomized patients, the allocation to the investigational group (5-FU + Oxaliplatin) and the control group (5-FU), the number of patients who did not undergo surgery with detailed reasons (death, progression before surgery, toxicity, surgery refusal, missing data), the number of patients who did not receive adjuvant chemotherapy with reasons, changes during adjuvant chemotherapy (switched arm or other treatment), and the final number who received treatment as randomized.
 
 ```{r, fig.height=8, fig.width=9}
 #| label: fig-1
@@ -166,7 +166,7 @@ consort_plot(data = df.fig1,
                   cex = 0.7)
 ```
 
-The main patient counts are similar to the original figure 1: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
+The main patient counts are similar to the published figure 1: 613 patients in the investigational group and 623 patients in the control group after randomization; 17 patients in the investigational group and 8 in the control group did not undergo surgery.
 
 However, some numbers do not match with the original consort diagram. **The counts for patients who did not have adjuvant chemotherapy are slightly lower (129 vs. 131 in the investigational group and 138 vs. 139 in the control group). The numbers who started adjuvant chemotherapy are also slightly lower (467 vs. 462 for the investigational group; 477 vs. 473 for the control group). In addition, the final “received as randomized” count in the investigational group in our version is slightly higher (441 vs. 436).**
 
@@ -385,7 +385,7 @@ tryCatch({
 knitr::kable(table1_data)
 ```
 
-**Our reproduced @tbl-table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
+**Our reproduced @table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
 
 ## Primary Endpoint Analysis
 
