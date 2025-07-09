@@ -40,9 +40,6 @@ library(coxme) # coxme: for mixed-effects Cox proportional hazards models
 library(forestplot) # figure 4
 library(tidyr)
 
-# additional analysis
-# library(cmprsk)
-
 # load data
 load("actual_data/Primary_endpoint_data.rda") 
 ```
@@ -57,7 +54,7 @@ On this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 **Secondary trial objectives** were to evaluate the efficacy of additional oxaliplatin to the standard regimen on: 1) overall survival which is defined as time from randomisation to death from any cause and 2) incidence of local and distant recurrences which is defined as the time between randomization and occurrence of any locoregional and distant recurrence, respectively, irrespective of whether this was a first event or not.
 
-**Additional analysis** was performed to extend the original analysis by applying the same mixed-effects Cox model framework to overall survival and the proportional hazards assumption was checked using log–log survival plots. 
+**Additional analysis** was performed to extend the original analysis by applying the same mixed-effects Cox model approach to overall survival, and the proportional hazards assumption was checked using log–log survival plots. 
 
 ### Tables and Figures to reproduce:
 
@@ -213,8 +210,8 @@ calc_stats <- function(x) {
 # Function to map location categories
 map_location <- function(bentf) {
   case_when(
-    bentf == "< 6cm" ~ "0-5 cm",
-    bentf == "6 - 10cm" ~ ">5-10 cm",
+    bentf == "< 6cm" ~ "< 6cm",
+    bentf == "6 - 10cm" ~ "6 - 10cm",
     bentf == ">10cm" ~ ">10 cm",
     TRUE ~ NA_character_
   )
@@ -260,7 +257,7 @@ table1_data <- data.frame(
     "Clinical T category", "cT2", "cT3", "cT4", "Missing",
     "Clinical N category", "cN0", "cN1-2", "Missing",
     "Clinical disease stage", "Stage II", "Stage III", "  cT1-2 N1-2", "  cT3-4 N1-2", "Missing",
-    "Location from anal verge", "0-5 cm", ">5-10 cm", ">10 cm", "Missing",
+    "Location from anal verge", "< 6cm", "6 - 10cm", ">10 cm", "Missing",
     "Histology", "Adenocarcinoma", "Mucinous adenocarcinoma", "Signet-ring cell carcinoma", "Other or missing",
     "Tumour differentiation", "Well differentiated (G1)", "Moderately differentiated (G2)", 
     "Poorly differentiated (G3)", "Missing data"
@@ -311,8 +308,8 @@ tryCatch({
     calc_percent(CAOsurv$stage[investigational] == "cT3-4 N1-2", n_investigational),
     calc_percent(is.na(CAOsurv$stage[investigational]), n_investigational),
     "",
-    calc_percent(CAOsurv$location[investigational] == "0-5 cm", n_investigational),
-    calc_percent(CAOsurv$location[investigational] == ">5-10 cm", n_investigational),
+    calc_percent(CAOsurv$location[investigational] == "< 6cm", n_investigational),
+    calc_percent(CAOsurv$location[investigational] == "6 - 10cm", n_investigational),
     calc_percent(CAOsurv$location[investigational] == ">10 cm", n_investigational),
     calc_percent(is.na(CAOsurv$location[investigational]), n_investigational),
     "",
@@ -357,8 +354,8 @@ tryCatch({
     calc_percent(CAOsurv$stage[control] == "cT3-4 N1-2", n_control),
     calc_percent(is.na(CAOsurv$stage[control]), n_control),
     "",
-    calc_percent(CAOsurv$location[control] == "0-5 cm", n_control),
-    calc_percent(CAOsurv$location[control] == ">5-10 cm", n_control),
+    calc_percent(CAOsurv$location[control] == "< 6cm", n_control),
+    calc_percent(CAOsurv$location[control] == "6 - 10cm", n_control),
     calc_percent(CAOsurv$location[control] == ">10 cm", n_control),
     calc_percent(is.na(CAOsurv$location[control]), n_control),
     "",
@@ -593,7 +590,7 @@ lr_test <- logrank_test(Surv(DFStime, DFSevent) ~ randarm | s_nzsmall,
                        distribution = approximate(nresample = 100000))
 ```
 
-Authors reported an exact stratified log-rank test; however, we encountered an error `cannot compute exact p-values with blocks` when using the exact distribution in the test. Instead, we applied an approximative (Monte Carlo) log-rank test. The result showed that the DFS was different in the two treatment groups (p = `r round(pvalue(lr_test), 3)`), the same as in the paper.
+Authors reported an exact stratified log-rank test; however, we encountered an error `cannot compute exact p-values with blocks` when using the exact distribution in the test. Instead, we applied an approximative (Monte Carlo) log-rank test. **The result showed that the DFS was different in the two treatment groups (p = `r round(pvalue(lr_test), 3)`), the same as in the paper.**
 
 ### Mixed-effects Cox Model
 
@@ -619,7 +616,7 @@ p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
 
 ```
 
-The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 2)` with 95% confidence interval (CI): (`r round(hr_ci_lower,2)`, `r round(hr_ci_upper,2)`), p=`r round(p_value_cox, 2)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
+The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 2)` with 95% confidence interval (CI): (`r round(hr_ci_lower,2)` - `r round(hr_ci_upper,2)`), p=`r round(p_value_cox, 2)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
 
 **The numbers are identical to the ones reported in the paper:** *The HR for disease-free survival was 0·79 (95% CI 0·64–0·98, p=0·03, mixed eﬀects Cox model)*
 
@@ -714,7 +711,7 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
        col = c("red", "blue"), lwd = 2, bty = "n")
 ```
 
-The lines crossed early in the follow-up time, so we think there might be evidence on violation of the proportional hazard (PH) assumption. We notice that during the majority of follow-up period, the PH assumption is met. We are not sure how the violation of the PH assumption at early stage affects the model.
+The lines crossed early in the follow-up time, so **we think there might be evidence on violation of the proportional hazard (PH) assumption**. We notice that during the majority of follow-up period, the PH assumption is met. We are not sure how the violation of the PH assumption at early stage affects the model.
 
 ```{r}
 #| label: survival-summary
@@ -893,7 +890,7 @@ ggsurvplot(
 )
 ```
 
-The shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the number at risk in the control group at all year marks. Our number is one participant fewer than reported in the paper.** To confirm this mismatch, we manually calculated the number at risk per treatment group for overall survival
+The shape of the overall survival curve and risk table are quite similar to the original figure. **However, there is a mismatch for the number at risk in the control group at all year marks. Our number is one participant fewer than reported in the paper.** To confirm this mismatch, we manually calculated the number at risk per treatment group for overall survival.
 
 ```{r}
 #| label: tbl-OS-number-at-risk
@@ -946,13 +943,10 @@ df.fig3 <- CAOsurv %>%
                             is.na(LRtype) ~ NA_real_,
                             TRUE ~ 1),
          LRplot_f = factor(LRplot),
-         DRcmptrsk = case_when(DRtype == "Tod" ~ 2, # who didn't have distant recurrence but died
+         DRcmptrsk = case_when(DRtype == "Tod" ~ 2, 
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1),
          DRcmptrsk = factor(DRcmptrsk),
-         DRplot = case_when(DRtype == "Tod" ~ 0, # who didn't have distant recurrence but died
-                            grepl("censored", DRtype) ~ 0,
-                            TRUE ~ 1),
          drtime = DRtime/365,
          lrtime = LRtime/365)
 
@@ -990,10 +984,13 @@ add_LR <-
                              .Names = c("sec", "min", "hour", "mday", "mon", "year", "wday", "yday", "isdst", "zone", "gmtoff"), 
                              class = c("POSIXlt", "POSIXt"))), .Names = c("patnr","rez_dat"), row.names = c(NA, -19L), class = "data.frame") 
 
+# rename columns for merge
 colnames(add_LR)<- c("patnr", "LReventtime")
 
+# merge the data
 df.fig3 <- left_join(df.fig3, add_LR, by = "patnr")
 
+# extract new participant id
 newid <- add_LR$patnr
 
 df.fig3 <- df.fig3 %>%
@@ -1002,12 +999,14 @@ df.fig3 <- df.fig3 %>%
          LRplot_new = factor(LRplot_new),
          LReventtime = case_when(patnr %in% newid ~ LReventtime.y,
                                  TRUE ~ LReventtime.x),
+         # calculate time since randomization
          lrtime2 = difftime(LReventtime, melde_dat, units = "days")/365)
 
 cuminc(Surv(lrtime2, LRplot_new) ~ randarm, df.fig3) %>%
-  ggcuminc() +
+  ggcuminc(outcome = 1) +
   # add_confidence_interval() +
   add_risktable() +
+  labs(y="Cumulative incidecne of \nlocoregional recurrence \nwith additional data") +
   scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 
 ```
@@ -1033,13 +1032,13 @@ Similar issue on the numbers at risk at year 1, 3, and 5 was identified as in th
 #| label: fig-alt-fig3b
 #| fig-cap: Alternative plot for cumulative incidence of distant recurrence (by the prodlim package)
 
- crFit <- prodlim(Hist(DRtime/365,DRcmptrsk)~randarm, data=df.fig3) 
- plot(crFit,
-      cause=1,
-      ylim = c(0,0.5),
-      legend.x = "topleft",
-      confint = F,
-      atrisk.at = 0:6)
+crFit <- prodlim(Hist(DRtime/365,DRcmptrsk)~randarm, data=df.fig3) 
+plot(crFit,
+    cause=1,
+    ylim = c(0,0.5),
+    legend.x = "topleft",
+    confint = F,
+    atrisk.at = 0:6)
 ```
 
 As shown in the above plot, the numbers at risk are the same from the `prodlim` package. As the final confirmation, we manually calculated the number at risk again. In our manual calculation, participants who experienced any event at each year mark are excluded from the number at risk for that year.
@@ -1056,6 +1055,7 @@ df.fig3 <- df.fig3 %>%
                                  (DRcmptrsk = 1 & DRtime/365 <=5)|(DRcmptrsk != 1 & DRtime/365 <=5) ~ 5, #exclude at y5
                                  (DRcmptrsk = 1 & DRtime/365 <=6)|(DRcmptrsk != 1 & DRtime/365 <=6) ~ 6, #exclude at y6
                                  TRUE ~ 9),
+         # reverse code the number at risk at each year
          ar0 = 1,
          ar1 = case_when(excludeyear>1 ~ 1, TRUE ~ 0),
          ar2 = case_when(excludeyear>2 ~ 1, TRUE ~ 0),
@@ -1064,6 +1064,7 @@ df.fig3 <- df.fig3 %>%
          ar5 = case_when(excludeyear>5 ~ 1, TRUE ~ 0),
          ar6 = case_when(excludeyear>6 ~ 1, TRUE ~ 0))
 
+# summarize the number at risk per year
 df.fig3 %>%
   summarize(y0=sum(ar0),
             y1=sum(ar1),
@@ -1076,7 +1077,7 @@ df.fig3 %>%
   knitr::kable()
 ```
 
-The numbers at risk in our manual calculation match with the reported numbers in the paper. Based on these explorations, we found that *`survminer`, `tidycmprsk` and `prodlim` package includes participants who experienced events at each time mark in the number at risk count.*
+The numbers at risk in our manual calculation match the reported numbers in the paper. Based on these explorations, we found that *`survminer`, `tidycmprsk` and `prodlim` package includes participants who experienced events at each time mark in the number at risk count.*
 
 ## Subgroup analysis
 
@@ -1119,7 +1120,7 @@ df.age %>%
   knitr::kable()
 ```
 
-We found that if we use the `cut()` function and set cut-offs at 0, 60, 70, and 100, we will get the same event numbers and total n (see table below). The `cut` function uses right-inclusive range when cutting the variable. As a result, **the age levels in the subgroup analysis is "**$\leq60$, \>60-70, and \>70."
+We found that if we use the `cut()` function and set cut-offs at 0, 60, 70, and 100, we will get the same event numbers and total n (see table below). The `cut` function uses right-inclusive range when cutting the variable. As a result, **the age levels in the subgroup analysis is "**$\leq$60, \>60-70, and \>70."
 
 ```{r}
 #| label: tbl-age-new
@@ -1128,11 +1129,12 @@ We found that if we use the `cut()` function and set cut-offs at 0, 60, 70, and 
 df.age %>%
   group_by(age_cat, randarm.re) %>%
     summarize(
-      events = sum(dfs_status == 1, na.rm = TRUE),
+      events = sum(dfs_status == 1, na.rm = TRUE), # event n per age category and treatment
       total = n(),
       .groups = 'drop'
     ) %>%
   mutate(`events/n` = paste(events, total, sep = "/")) %>%
+  # transpose the table
   pivot_wider(id_cols = age_cat,
               names_from = randarm.re,
               values_from = `events/n`) %>%
@@ -1267,8 +1269,8 @@ prepare_subgroup_analysis <- function() {
   results <- rbind(results, calculate_hr(CAOsurv, "ecog_b == 'Grad 1' | ecog_b == 'Grad 2'", "ECOG 1-2"))
   
   # Location from anal verge (bentf variable)
-  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '< 6cm'", "0-5 cm"))
-  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '6 - 10cm'", ">5-10 cm"))
+  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '< 6cm'", "< 6cm"))
+  results <- rbind(results, calculate_hr(CAOsurv, "bentf == '6 - 10cm'", "6 - 10cm"))
   results <- rbind(results, calculate_hr(CAOsurv, "bentf == '>10cm'", ">10 cm"))
   
   # cT category (gesamt_t)
@@ -1314,7 +1316,7 @@ prepare_subgroup_analysis <- function() {
     "Age \u226460", "Age >60-70", "Age >70",
     "Male", "Female",
     "ECOG 0", "ECOG 1-2", 
-    "0-5 cm", ">5-10 cm", ">10 cm",
+    "< 6cm", "6 - 10cm", ">10 cm",
     "cT2-3", "cT4",
     "cN0", "cN+",
     "ypT0", "ypTis/T1", "ypT2", "ypT3", "ypT4",
@@ -1368,7 +1370,6 @@ results.plot <- results %>%
   mutate(intervention = paste(events_treatment, n_treatment, sep = "/"),
          control = paste(events_control, n_control, sep = "/"),
          hrci = paste0(hr, " (", lower, ", ", upper, ")")) %>%
-  # add_row(label = "Age", intervention = NA, control = NA, hrci = NA, .before = 1) %>%
   select(label, intervention, control, hrci)
 
 m <- log(results$hr)
@@ -1385,6 +1386,7 @@ forestplot(results.plot,
            is.summary = 1:nrow(results.plot) %in% c(nrow(results.plot)),
            xlog = TRUE,
            xlab = "Hazard ratio \n Favours investigational group   |   Favours control group") %>%
+  # lines to separate subgroups
   fp_add_lines(h_3 = gpar(lty=1),
                h_6 = gpar(lty=2),
                h_8 = gpar(lty=2),
@@ -1399,8 +1401,8 @@ forestplot(results.plot,
                h_34 = gpar(lty=1)) %>%
   fp_add_header(label = c("","Subgroups"),
                 intervention = c("Intervention", "(events/total n)"),
-                 control = c("Control", "(event/total n)"),
-                 hrci = c("","HR (95%CI)")) %>%
+                control = c("Control", "(event/total n)"),
+                hrci = c("","HR (95%CI)")) %>%
   fp_decorate_graph(graph.pos = 4) %>%
   fp_set_style(txt_gp = fpTxtGp(ticks = gpar(cex=1),
                                 xlab = gpar(cex=1))) %>%
@@ -1420,7 +1422,7 @@ CAOsurv %>%
   knitr::kable()
 ```
 
-From the above table, we can see that the ypT category didn't have the ypTis and ypT1 levels merged in the subgroup analysis. The ypT1 group itself has 39 participants in the interventional and control groups each.
+From the above table, we can see that the ypT category didn't have a ypTis and ypT1 combined levels in the dataset. The ypT1 group itself has 39 participants in the interventional and control groups each.
 
 ```{r}
 #| label: tbl-ypt-T1-only
@@ -1447,7 +1449,7 @@ hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
 hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
 ```
 
-**Using only ypT1, we found the HR as presented in Figure 4 in the paper which is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
+**Using ypT1 level only, we found the HR as presented in Figure 4 in the paper which is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
 
 **In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper.** We were not able to figure out why those participants were removed from the analysis.
 
@@ -1462,7 +1464,7 @@ CAOsurv %>%
   knitr::kable()
 ```
 
-Note that we have also used the coarser center-cN-category strata in the subgroup analysis, and we found multiple subgroups having small deviation from the reported results besides the issues of two aforementioned variables. Since we have discussed this issue in the primary endpoint analysis, the results is not shown here.
+Note that we have also used the **coarser center-cN-category strata** in the subgroup analysis, and we found multiple subgroups having small deviation from the reported results besides the issues of two aforementioned variables. Since we have discussed this issue in the primary endpoint analysis, the results is not shown here.
 
 ## Additional analysis
 
@@ -1472,7 +1474,7 @@ Note that we have also used the coarser center-cN-category strata in the subgrou
 #| label: tbl-os-cox
 #| tbl-cap: Mixed-effects Cox model on overall survival using center-cN strata
 
-
+# mixed-effects model
 cm_os <- coxme(Surv(OStime, OSevent) ~ randarm + (1 | s_nz), 
                       data = CAOsurv)
 
@@ -1495,20 +1497,21 @@ We then check the PH assumption for the overall survival using log-log plot.
 #| label: fig-log-log-os
 #| fig-cap: Log-Log Plot for Proportional Hazards Assessment in Overall Survival
 
+# STEP 1: fit the model
 cm_os_fit <- prodlim(Hist(OStime / 365, OSevent) ~ randarm_plot + cluster(s_nz), data = CAOsurv)
 
-# STEP 3: Create fine-grained time points for smooth log-log curves
+# STEP 2: Create fine-grained time points for smooth log-log curves
 # Use 1000 time points to create smooth curves for assessment
 # time_points <- seq(0, max(CAOsurv$OStime)/365, length.out = 1000)
 
-# STEP 4: Extract survival probabilities at all time points
+# STEP 3: Extract survival probabilities at all time points
 # Predict survival probabilities for each treatment group
 surv_5fu_os <- predict(cm_os_fit, times = time_points, 
                     newdata = data.frame(randarm_plot = "5-FU"))[[1]]
 surv_5fuox_os <- predict(cm_os_fit, times = time_points, 
                       newdata = data.frame(randarm_plot = "5-FU + Oxaliplatin"))[[1]]
 
-# STEP 5: Calculate log-log transformation for proportional hazards check
+# STEP 4: Calculate log-log transformation for proportional hazards check
 # Remove boundary values (0 and 1) to avoid -Inf in log-log transformation
 # Proportional hazards assumption: log(-log(S(t))) curves should be parallel
 
