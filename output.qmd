@@ -28,6 +28,8 @@ library(flextable)
 ## figure 2 & 3
 library(survival)
 library(survminer)
+library(tidycmprsk)  
+library(ggsurvfit)
 
 library(coin) # coin: for stratified log-rank tests with permutation distributions
 library(coxme) # coxme: for mixed-effects Cox proportional hazards models
@@ -45,7 +47,7 @@ load("actual_data/Primary_endpoint_data.rda")
 
 ## Introduction
 
-In this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in [Rödel et al. (2015)](http://dx.doi.org/10.1016/S1470-2045(15)00159-X). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
+On this page, we follow the statistical analysis plan (SAP) we prepared to reproduce all the tables and figures reported in in [Rödel et al. (2015)](http://dx.doi.org/10.1016/S1470-2045(15)00159-X). The CAO/ARO/AIO-04 study is a multicentre, open-label, phase 3 randomised trial conducted in Germany. It compared the standard regimen (fluorouracil-based chemoradiotherapy and postoperative chemotherapy) to an investigational regimen where oxaliplatin was added to the treatment for Locally Advanced Rectal Cancer.
 
 ### Objectives
 
@@ -87,7 +89,7 @@ In this page, we follow the statistical analysis plan (SAP) we prepared to repro
 
 ### Reproducibility Note
 
-All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden in the output but fully documented for transparency and replication. Readers can click the code tab in the file for the code. We ran the code under below environment setting.
+The reproduction locates on [our GitHub page](https://github.com/yazidoxx/datathlon1) as well as our statistical analysis plan. All code for statistical analyses is documented with step-by-step comments explaining the methodology, assumptions, and interpretation. Code is hidden in the output but fully documented for transparency and replication. Readers can click the code tab in the file for the code. We ran the code under below environment setting.
 
 ```{r}
 sessionInfo()
@@ -623,7 +625,7 @@ p_value_cox <- 2 * pnorm(-abs(coef(cox_me_model) / hr_se))  # Two-sided p-value
 
 ```
 
-The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 2)` with 95% CI: (`r round(hr_ci_lower,2)`, `r round(hr_ci_upper,2)`), p=`r round(p_value_cox, 2)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
+The reproduced hazard Ratio for disease-free survival (5-FU + Oxaliplatin vs 5-FU) is `r round(hr, 2)` with 95% confidence interval (CI): (`r round(hr_ci_lower,2)`, `r round(hr_ci_upper,2)`), p=`r round(p_value_cox, 2)`. This shows that patients in the investigational group had an estimated 20% lower hazard of disease recurrence or death during the follow-up period, suggesting that adding oxaliplatin significantly improves DFS compared to 5-FU alone.
 
 **The numbers are identical to the ones reported in the paper:** *The HR for disease-free survival was 0·79 (95% CI 0·64–0·98, p=0·03, mixed eﬀects Cox model)*
 
@@ -734,7 +736,7 @@ surv_3yr_5fuox_upci <- surv_3yr[1,"upper"] * 100
 surv_3yr_5fuox_loci <- surv_3yr[1,"lower"] * 100
 ```
 
-The probability of DFS at 3 years is `r round(surv_3yr_5fuox)`% (95% CI: `r round(surv_3yr_5fuox_loci)`%, `r round(surv_3yr_5fuox_upci)`%) in the investigational group and `r round(surv_3yr_5fu)`% (95% CI: `r round(surv_3yr_5fu_loci)`%, `r round(surv_3yr_5fu_upci)`%)  in the control group. **These probabilities match the numbers reported in the paper.**
+The probability of DFS at 3 years is `r round(surv_3yr_5fuox)`% (95% CI: `r round(surv_3yr_5fuox_loci)`%, `r round(surv_3yr_5fuox_upci)`%) in the investigational group and `r round(surv_3yr_5fu)`% (95% CI: `r round(surv_3yr_5fu_loci)`%, `r round(surv_3yr_5fu_upci)`%) in the control group. **These probabilities match the numbers reported in the paper.**
 
 ## Secondary Endpoints Analysis
 
@@ -935,7 +937,7 @@ The numbers at risk match with the original paper in our manual calculation. **A
 
 #### Comparison with Figure 3
 
-We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. The figure in the paper seems to be generated from `gglpot2` pakcage, so we decided to plot the cumulative incidence using the `survminer` package. This package doesn't consider competing risk. We know that the cumulative incidence function uses the cause-specific hazard function, so we censored participants who experienced the competing risk in the data. Note that the cumulative incidence is reported in probability instead of percentage.
+We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. We decided to plot the cumulative incidence using the `tidycmprsk` package (Thanks to Han). 
 
 The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
 
@@ -949,54 +951,42 @@ df.fig3 <- CAOsurv %>%
                             LRtype == "censored" ~ 0,
                             is.na(LRtype) ~ NA_real_,
                             TRUE ~ 1),
-         # DRcausesp = case_when(is.na(DRtype) ~ NA_real_,                         grepl("Fernmeta|Fernmeta_Progression|OPPFM|Progression|Progression_OPPFM", DRtype) ~ 1,
-         #                        TRUE ~ 0),
+         LRplot = factor(LRplot),
          DRcmptrsk = case_when(DRtype == "Tod" ~ 2, # who didn't have distant recurrence but died
                                grepl("censored", DRtype) ~ 0,
                                TRUE ~ 1),
+         DRcmptrsk = factor(DRcmptrsk),
          DRplot = case_when(DRtype == "Tod" ~ 0, # who didn't have distant recurrence but died
                             grepl("censored", DRtype) ~ 0,
-                            TRUE ~ 1))
+                            TRUE ~ 1),
+         deathplot = case_when(DRtype == "Tod" ~ 1, # who didn't have distant recurrence but died
+                            grepl("censored", DRtype) ~ 0,
+                            TRUE ~ 0),
+         drtime = DRtime/365,
+         lrtime = LRtime/365)
 
 # Since the cumulative incidence function uses the cause-specific hazard function, the competing risk cam be classified as censored and use ggsurvplot()
 
-km3 <- survfit(Surv(LRtime/365, LRplot) ~ randarm, data = df.fig3)
-ggsurvplot(
-  km3,
-  data = df.fig3,
-  fun = "cumhaz",
-  risk.table = TRUE,
-  censor = FALSE,
-  break.time.by = 1,
-  break.y.by = 0.01,
-  ylab = "Cumulative incidecne of \nlocoregional recurrence",
-  legend.title = "",
-  legend.labs = c("Control group", "Investigational group")
-)
+cuminc(Surv(lrtime, LRplot) ~ randarm, df.fig3) %>%
+  ggcuminc() +
+  add_confidence_interval() +
+  add_risktable() +
+  scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 ```
 
 ```{r}
 #| label: fig-3b
 #| fig-cap: Cumulative incidence of distant recurrences in the intention-to-treat population
 
-km4 <- survfit(Surv(DRtime / 365, DRplot) ~ randarm, data = df.fig3)
-ggsurvplot(
-  km4,
-  data = df.fig3,
-  fun = "cumhaz",
-  risk.table = TRUE,
-  censor = FALSE,
-  break.time.by = 1,
-  break.y.by = 0.05,
-  ylab = "Cumulative incidecne of \ndistant recurrence",
-  legend.title = "",
-  legend.labs = c("Control group", "Investigational group")
-)
-
-# cuminc2 <- cuminc(ftime = df.fig3$DRtime/365, fstatus = df.fig3$DRcmptrsk, group = df.fig3$randarm)
+cuminc(Surv(drtime, DRcmptrsk) ~ randarm, df.fig3) %>%
+  ggcuminc() +
+  add_confidence_interval() +
+  add_risktable() +
+  scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 ```
 
-Similar issue on the numbers at risk at year 1, 3, and 5 was identified as in the comparison with Figure 2b. Our number is one person off in control group, given by the `survminer` package. In order to check the reason, we use an alternative way to plot the cumulative incidence using the outcome variable with competing risks via the `prodlim` package.
+
+Similar issue on the numbers at risk at year 1, 3, and 5 was identified as in the comparison with Figure 2b. Our number is one person off in control group, given by the `tidycmprsk` package. In order to check the reason, we use an alternative way to plot the cumulative incidence using the outcome variable with competing risks via the `prodlim` package.
 
 ```{r}
 #| label: fig-alt-fig3b
@@ -1045,7 +1035,7 @@ df.fig3 %>%
   knitr::kable()
 ```
 
-The numbers at risk in our manual calculation match with the reported numbers in the paper. Based on these explorations, we found that *both `survminer` and `prodlim` package includes participants who experienced events at each time mark in the number at risk count.*
+The numbers at risk in our manual calculation match with the reported numbers in the paper. Based on these explorations, we found that *`survminer`, `tidycmprsk` and `prodlim` package includes participants who experienced events at each time mark in the number at risk count.*
 
 ## Subgroup analysis
 
@@ -1418,9 +1408,9 @@ hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
 hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
 ```
 
-Using only ypT1, we found the HR is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`)
+**Using only ypT1, we found the HR is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
 
-In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper. We were not able to figure out why those participants were removed from the analysis.
+**In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper.** We were not able to figure out why those participants were removed from the analysis.
 
 ```{r}
 #| label: tbl-tnm
@@ -1502,4 +1492,3 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```
 
 The Cox model is not suitable for overall survival in this data.
-
