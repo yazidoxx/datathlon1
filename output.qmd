@@ -1416,7 +1416,7 @@ forestplot(results.plot,
   fp_set_zebra_style("#f9f9f9")
 ```
 
-**\[\[Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only one minor difference in ypTis/T1 subcategory. The hazard ratio differs by 0.09. The mismatch comes from the number of participants at ypTis/T1 level. We combined ypTis and ypT1 in the subgroup analysis, but we found more people in this level. The total n in our figure for the control group is 42 and for the interventional group is 44 while in the paper the number for both groups is 39. 
+Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only one minor difference in ypTis/T1 subcategory. **The hazard ratio differs by 0.09.** The mismatch comes from the number of participants at ypTis/T1 level. We combined ypTis and ypT1 in the subgroup analysis as presented in the original subcategory, but we found more people in this level. The total n in our figure for the control group is 42 and for the interventional group is 44 while in the paper the number for both groups is 39. 
 
 ```{r}
 #| label: tbl-ypt
