@@ -1456,7 +1456,7 @@ hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
 hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
 ```
 
-**Using only ypT1, we the HR as presented in Figure 4 in the paper which is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
+**Using only ypT1, we found the HR as presented in Figure 4 in the paper which is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
 
 **In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper.** We were not able to figure out why those participants were removed from the analysis.
 
