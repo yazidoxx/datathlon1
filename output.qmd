@@ -1112,7 +1112,7 @@ df.age %>%
 
 We reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint.
 
-```{r, fig.width=11, fig.height=10}
+```{r, fig.width=10, fig.height=9}
 #| label: fig-4
 #| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
 
@@ -1394,94 +1394,31 @@ CAOsurv %>%
 From the above table, we can see that the ypT category didn't have the ypTis and ypT1 levels merged in the subgroup analysis. The ypT1 group itself has 39 participants in the interventional and control groups each.
 
 ```{r}
-#| label: ypt-T1-only
-
-# Function to calculate HR for a subgroup
-calculate_hr <- function(data, condition = NULL, label) {
-  if (!is.null(condition)) {
-    subgroup_data <- filter(data, !!rlang::parse_expr(condition))
-  } else {
-    subgroup_data <- data
-  }
-  
-  # Get counts for the figure
-  n_intervention <- sum(subgroup_data$treatment == 1, na.rm = TRUE)
-  n_control <- sum(subgroup_data$treatment == 0, na.rm = TRUE)
-  
-  # Count events
-  events_intervention <- sum(subgroup_data$treatment == 1 & subgroup_data$dfs_status == 1, na.rm = TRUE)
-  events_control <- sum(subgroup_data$treatment == 0 & subgroup_data$dfs_status == 1, na.rm = TRUE)
-  
-  # Skip calculation if there are too few events
-  if (events_intervention + events_control < 5) {
-    return(data.frame(
-      label = label,
-      hr = NA,
-      lower = NA,
-      upper = NA,
-      events_intervention = events_intervention,
-      n_intervention = n_intervention,
-      events_control = events_control,
-      n_control = n_control
-    ))
-  }
-      # Create Cox model with treatment as the predictor
-  cox_model <- tryCatch({
-    # Reference is control (0), so HR < 1 means investigational is better
-    coxme(Surv(DFStime/365, dfs_status) ~ treatment + (1|s_nz), data = subgroup_data)
-  }, error = function(e) {
-    return(NULL)
-  })
-  
-  if (is.null(cox_model)) {
-    return(data.frame(
-      label = label,
-      hr = NA,
-      lower = NA,
-      upper = NA,
-      events_intervention = events_intervention,
-      n_intervention = n_intervention,
-      events_control = events_control,
-      n_control = n_control
-    ))
-  }
-  
-  # Extract hazard ratio and confidence interval
-  hr <- exp(coef(cox_model))
-  ci <- tryCatch({
-    exp(confint(cox_model))
-  }, error = function(e) {
-    return(matrix(c(NA, NA), nrow = 1, ncol = 2))
-  })
-  
-  # Round to 2 decimal places for presentation
-  hr_rounded <- round(hr[1], 2)
-  lower_rounded <- round(ci[1, 1], 2)
-  upper_rounded <- round(ci[1, 2], 2)
-  
-  data.frame(
-    label = label,
-    hr = hr_rounded, 
-    lower = lower_rounded,
-    upper = upper_rounded,
-    events_intervention = events_intervention,
-    n_intervention = n_intervention,
-    events_control = events_control,
-    n_control = n_control
-  )
-}
-
-results_ypt <-data.frame()
-results_ypt <- rbind(results_ypt, calculate_hr(CAOsurv, "pT == 'ypT1'", "ypT1"))
+#| label: tbl-ypt-T1-only
+#| tbl-cap: Event n and total sample size in ypT1 level
 
 CAOsurv %>%
-  filter(pT=='ypT1') %>%
-  mutate(dfs_status = as.numeric(CAOsurv$DFSevent),
-         treatment = ifelse(CAOsurv$randarm == "5-FU + Oxaliplatin", 1, 0)) %>%
+  filter(pT == 'ypT1') %>%
+  summarise(event_n = sum(DFSevent),
+            total_n = n(),
+            .by = randarm) %>%
+  knitr::kable()
+
+
+# calculate HR within T
+results_ypt <- CAOsurv %>%
+  filter(pT == 'ypT1') %>%
+  mutate(dfs_status = as.numeric(DFSevent),
+         treatment = ifelse(randarm == "5-FU + Oxaliplatin", 1, 0)) %>%
   coxme(Surv(DFStime/365, dfs_status) ~ treatment + (1|s_nz), data = .) %>%
   summary()
+
+hr_ypt <- results_ypt$coefficients[2]
+hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
+hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
 ```
 
+Using only ypT1, we found the HR is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`)
 
 In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper. We were not able to figure out why those participants were removed from the analysis.
 
