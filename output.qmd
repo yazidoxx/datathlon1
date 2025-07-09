@@ -1416,9 +1416,7 @@ forestplot(results.plot,
   fp_set_zebra_style("#f9f9f9")
 ```
 
-**\[\[Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only minor differences (within ±0.01) in some subgroup hazard ratios. Notably, the hazard ratio differs by 0.09 in the ypTis/T1 subgroup.\]\]**
-
-The mismatch in the ypT category comes from the number of participants at ypTis/T1 level. We combined ypTis and ypT1 in the subgroup analysis, but we found more people in this level.
+**\[\[Our reproduced forest plot is identical to the original figure 4 reported by Rödel et al. (2015), with only one minor difference in ypTis/T1 subcategory. The hazard ratio differs by 0.09. The mismatch comes from the number of participants at ypTis/T1 level. We combined ypTis and ypT1 in the subgroup analysis, but we found more people in this level. The total n in our figure for the control group is 42 and for the interventional group is 44 while in the paper the number for both groups is 39. 
 
 ```{r}
 #| label: tbl-ypt
@@ -1458,7 +1456,7 @@ hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
 hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
 ```
 
-**Using only ypT1, we found the HR is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
+**Using only ypT1, we the HR as presented in Figure 4 in the paper which is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`).**
 
 **In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper.** We were not able to figure out why those participants were removed from the analysis.
 
