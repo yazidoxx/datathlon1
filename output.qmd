@@ -1542,3 +1542,27 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```
 
 The Cox model is not suitable for overall survival in this data.
+
+## GitHub Repository
+
+For complete code and reproducibility materials, scan the QR code below or visit our GitHub repository:
+
+```{r}
+#| label: github-qr
+#| fig-cap: QR Code linking to GitHub repository
+#| fig-align: center
+
+# Generate QR code for GitHub repository
+library(qrcode)
+
+# Create QR code for the GitHub repository
+github_url <- "https://github.com/yazidoxx/datathlon1"
+qr <- qr_code(github_url)
+
+# Plot the QR code
+plot(qr, col = c("white", "black"))
+```
+
+**GitHub Repository**: https://github.com/yazidoxx/datathlon1
+
+This repository contains all the code, data, and documentation used in this reproduction study.
