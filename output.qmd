@@ -1112,7 +1112,7 @@ df.age %>%
 
 We reproduced the forest plot for DFS hazard ratios with 95% confidence intervals across different subgroups, including age, sex, ECOG performance status, tumour location, cT category, cN category, ypT category, ypN category, resection completeness, pathological stage (TNM stage), and type of surgery. We didn't add the subgroup titles to the forest plot due to time constraint.
 
-```{r, fig.width=11, fig.height=10}
+```{r, fig.width=10, fig.height=9}
 #| label: fig-4
 #| fig-cap: Disease-free survival in the intention-to-treat population by patient subgroups according to pretreatment and surgical or pathological factors after preoperative chemoradiotherapy
 
@@ -1147,7 +1147,7 @@ prepare_subgroup_analysis <- function() {
   results <- data.frame()
   
   # Function to calculate HR for a subgroup
-  calculate_hr <- function(data, condition = NULL, label) {
+  calculate_hr <<- function(data, condition = NULL, label) {
     if (!is.null(condition)) {
       subgroup_data <- filter(data, !!rlang::parse_expr(condition))
     } else {
@@ -1393,6 +1393,33 @@ CAOsurv %>%
 
 From the above table, we can see that the ypT category didn't have the ypTis and ypT1 levels merged in the subgroup analysis. The ypT1 group itself has 39 participants in the interventional and control groups each.
 
+```{r}
+#| label: tbl-ypt-T1-only
+#| tbl-cap: Event n and total sample size in ypT1 level
+
+CAOsurv %>%
+  filter(pT == 'ypT1') %>%
+  summarise(event_n = sum(DFSevent),
+            total_n = n(),
+            .by = randarm) %>%
+  knitr::kable()
+
+
+# calculate HR within T
+results_ypt <- CAOsurv %>%
+  filter(pT == 'ypT1') %>%
+  mutate(dfs_status = as.numeric(DFSevent),
+         treatment = ifelse(randarm == "5-FU + Oxaliplatin", 1, 0)) %>%
+  coxme(Surv(DFStime/365, dfs_status) ~ treatment + (1|s_nz), data = .) %>%
+  summary()
+
+hr_ypt <- results_ypt$coefficients[2]
+hr_loci_ypt <- exp(results_ypt$coefficients[1]-results_ypt$coefficients[3]*1.96)
+hr_upci_ypt <- exp(results_ypt$coefficients[1]+results_ypt$coefficients[3]*1.96)
+```
+
+Using only ypT1, we found the HR is `r round(hr_ypt,2)` (95% CI: `r round(hr_loci_ypt,2)`, , `r round(hr_upci_ypt,2)`)
+
 In the TNM stage variable, there is also levels of Stage IV and ypTisN0 which are not presented in Figure 4 in the paper. We were not able to figure out why those participants were removed from the analysis.
 
 ```{r}
@@ -1476,26 +1503,3 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 
 The Cox model is not suitable for overall survival in this data.
 
-### Distant recurrence
-
-We first fitted a Fine-Gray model without considering the stratified randomization.
-
-```{r}
-fomula <- model.matrix( ~ df.fig3$randarm)[,-1]
-CI.reg <- crr(df.fig3$DRtime,
-              df.fig3$DRcmptrsk,
-              cov1 = fomula,
-              failcode = 1,
-              cencode = 0)
-summary(CI.reg)
-```
-
-Then we added a random intercept to each center-cN category.
-
-```{r, eval=FALSE}
-add<-comp.risk(Event(time,cause)~+1+cluster(id),data=multcif,cause=1,
-               n.sim=0,times=times,max.clust=NULL)
-
-out1<-random.cif(add,data=multcif,cause1=1,cause2=1)
-summary(out1)
-```
