@@ -13,7 +13,7 @@ editor: visual
 ---
 
 ```{r library and data, include=FALSE}
-here::i_am("upl/output.qmd") # doesn't work on the old `here`
+here::i_am("output.qmd") # doesn't work on the old `here`
 library(here) # call on the data using a relative directory
 
 # trial profile & data overview
@@ -110,7 +110,7 @@ The median follow-up time of this study is `r round(o_fu[[4]][2],2)` months (int
 
 #### Comparison with Figure 1
 
-We visualized the CONSORT diagram (trial profile) as presented in the original publication with some minor differences. Our version includes the main patient flow: the total number of randomized patients, the allocation to the investigational group (5-FU + Oxaliplatin) and the control group (5-FU), the number of patients who did not undergo surgery with detailed reasons (death, progression before surgery, toxicity, surgery refusal, missing data), the number of patients who did not receive adjuvant chemotherapy with reasons, changes during adjuvant chemotherapy (switched arm or other treatment), and the final number who received treatment as randomized.
+The CONSORT diagram (trial profile) presents how participants moved through each stage of the trial. Our version includes the main patient flow: the total number of randomized patients, the allocation to the investigational group (5-FU + Oxaliplatin) and the control group (5-FU), the number of patients who did not undergo surgery with detailed reasons (death, progression before surgery, toxicity, surgery refusal, missing data), the number of patients who did not receive adjuvant chemotherapy with reasons, changes during adjuvant chemotherapy (switched arm or other treatment), and the final number who received treatment as randomized.
 
 ```{r, fig.height=8, fig.width=9}
 #| label: fig-1
@@ -181,7 +181,7 @@ We reported the baseline demographics and clinical characteristics for patients 
 No statistical test was conducted between arms, as recommended by the CONSORT statement for randomized trials.
 
 ```{r}
-#| label: tbl-table1
+#| label: table1
 #| tbl-cap: Baseline characteristics
 
 # Function to calculate percentages
@@ -383,7 +383,7 @@ tryCatch({
 knitr::kable(table1_data)
 ```
 
-**Our reproduced @tbl-table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
+**Our reproduced @table1 structure matches the original publication and we could reproduce it exactly as Table 1 presented in Rödel et al. (2015).**
 
 ## Primary Endpoint Analysis
 
@@ -734,7 +734,7 @@ surv_3yr_5fuox_upci <- surv_3yr[1,"upper"] * 100
 surv_3yr_5fuox_loci <- surv_3yr[1,"lower"] * 100
 ```
 
-The probability of DFS at 3 years is `r round(surv_3yr_5fuox)`% (95% CI: `r round(surv_3yr_5fuox_loci)`%, `r round(surv_3yr_5fuox_upci)`%) in the investigational group and `r round(surv_3yr_5fu)`% (95% CI: `r round(surv_3yr_5fu_loci)`%, `r round(surv_3yr_5fu_upci)`%)  in the control group. **These probabilities match the numbers reported in the paper.**
+The probability of DFS at 3 years is `r round(surv_3yr_5fuox)`% (95% CI: `r round(surv_3yr_5fuox_loci)`%, `r round(surv_3yr_5fuox_upci)`%) in the investigational group and `r round(surv_3yr_5fu)`% (95% CI: `r round(surv_3yr_5fu_loci)`%, `r round(surv_3yr_5fu_upci)`%) in the control group. **These probabilities match the numbers reported in the paper.**
 
 ## Secondary Endpoints Analysis
 
