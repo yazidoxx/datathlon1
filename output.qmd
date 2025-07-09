@@ -937,7 +937,7 @@ The numbers at risk match with the original paper in our manual calculation. **A
 
 #### Comparison with Figure 3
 
-We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. We decided to plot the cumulative incidence using the `tidycmprsk` package (Thanks to Han). 
+We deviated from the SAP where says using the `cmprsk` package for the cumulative incidence as we didn't find a way to plot only one cause. We decided to plot the cumulative incidence using the `tidycmprsk` package (Thanks to Han).
 
 The original Figure 3 in the paper shows the cumulative incidence functions for locoregional recurrence and distant metastases by treatment group. However, in our reproduction, we do not have the appropriate data to reproduce the cumulative incidence of locoregional recurrence.
 
@@ -984,7 +984,6 @@ cuminc(Surv(drtime, DRcmptrsk) ~ randarm, df.fig3) %>%
   add_risktable() +
   scale_ggsurvfit(x_scales = list(breaks = seq(0, 6, by = 1)))
 ```
-
 
 Similar issue on the numbers at risk at year 1, 3, and 5 was identified as in the comparison with Figure 2b. Our number is one person off in control group, given by the `tidycmprsk` package. In order to check the reason, we use an alternative way to plot the cumulative incidence using the outcome variable with competing risks via the `prodlim` package.
 
@@ -1492,3 +1491,27 @@ legend("bottomright", legend = c("5-FU + Oxaliplatin", "5-FU"),
 ```
 
 The Cox model is not suitable for overall survival in this data.
+
+## GitHub Repository
+
+For complete code and reproducibility materials, scan the QR code below or visit our GitHub repository:
+
+```{r}
+#| label: github-qr
+#| fig-cap: QR Code linking to GitHub repository
+#| fig-align: center
+
+# Generate QR code for GitHub repository
+library(qrcode)
+
+# Create QR code for the GitHub repository
+github_url <- "https://github.com/yazidoxx/datathlon1"
+qr <- qr_code(github_url)
+
+# Plot the QR code
+plot(qr, col = c("white", "black"))
+```
+
+**GitHub Repository**: https://github.com/yazidoxx/datathlon1
+
+This repository contains all the code, data, and documentation used in this reproduction study.
