@@ -2,6 +2,11 @@
 
 **Reproduction of Rödel et al. (2015) Lancet Study Results**
 
+## Grant Information
+
+**Horizon-MSCA-2022-DN-01**  
+**Project: 101120360**
+
 ## Overview
 
 This project reproduces the statistical analysis and results from the CAO/ARO/AIO-04 study published in *Rödel et al. (2015)* in The Lancet. The study is a multicentre, open-label, phase III randomized controlled trial that evaluated the efficacy of adding oxaliplatin to standard fluorouracil-based chemoradiotherapy for locally advanced rectal cancer.
@@ -16,12 +21,11 @@ This project reproduces the statistical analysis and results from the CAO/ARO/AI
   - **Control group**: Standard fluorouracil (5-FU) based chemoradiotherapy + postoperative chemotherapy
   - **Investigational group**: 5-FU + Oxaliplatin based chemoradiotherapy + postoperative chemotherapy
 
-### Primary Objective
+### Objectives
 
-Evaluate whether adding oxaliplatin to standard therapy improves disease-free survival (DFS) in patients with locally advanced rectal cancer.
+**Primary Objective**: Evaluate whether adding oxaliplatin to standard therapy improves disease-free survival (DFS) in patients with locally advanced rectal cancer.
 
-### Secondary Objectives
-
+**Secondary Objectives**:
 - Overall survival (OS) analysis
 - Incidence of local and distant recurrences
 - Safety and toxicity profiles
@@ -31,25 +35,34 @@ Evaluate whether adding oxaliplatin to standard therapy improves disease-free su
 
 ```
 datathlon1/
-├── actual data/
-│   └── Primary_endpoint_data.rda          # Main clinical trial dataset
-├── figures_scripts/
-│   └── figure2_script.r                   # Kaplan-Meier survival curves
-├── tables_scripts/
-│   ├── table1_script.r                    # Baseline characteristics
-│   ├── table2_script.r                    # Primary endpoint analysis
-│   └── table3_script.r                    # Overall survival analysis
-├── reproduced_tf/                         # Output directory for reproduced tables/figures
+├── output.qmd                            # Main Quarto document with complete analysis
+├── tables_scripts/                       # Individual R scripts for tables
+│   ├── table1_script.r                   # Baseline characteristics
+│   ├── table2_script.r                   # Primary endpoint analysis
+│   └── table3_script.r                   # Overall survival analysis
+├── reproduced_tf/                        # Generated tables and figures (PNG)
 │   ├── table1.png
 │   ├── table2.png
-│   ├── table3.png
-│   └── figure2_survival.png
-├── primary_endpoint_analysis.R             # Main statistical analysis script
-├── Primary_endpoint.Rnw                   # Sweave document for detailed analysis
-├── output.qmd                            # Quarto markdown report
-├── Roedel et al 2015 Lancet PIIS147020451500159X.pdf  # Original publication
-└── README.md                             # This file
+│   └── table3.png
+├── output_files/                         # Generated HTML output and assets
+│   ├── figure-html/                      # Generated figures from Quarto
+│   └── libs/                            # Bootstrap and other web assets
+├── output_cache/                         # Quarto cache files
+├── SAP_team1.pdf                        # Statistical Analysis Plan
+├── README.md                            # This file
+└── LICENSE                              # License information
 ```
+
+**Note**: The clinical trial dataset (`actual_data/Primary_endpoint_data.rda`) is required but not included in the repository for data privacy reasons.
+
+## Data Requirements
+
+This analysis requires the following data file (not included in repository):
+- `actual_data/Primary_endpoint_data.rda` - Main clinical trial dataset containing patient-level data
+
+The dataset should contain the following key data objects:
+- `CAOsurv` - Main patient dataset with survival and clinical variables
+- `CONSORT` - Trial flow data for CONSORT diagram generation
 
 ## Reproduced Tables and Figures
 
@@ -58,12 +71,12 @@ datathlon1/
 - **Table 1**: Baseline Characteristics and Demographics
   - Patient demographics by treatment arm
   - Disease characteristics and stratification factors
-  - Prior treatments and medical history
+  - Clinical staging and tumor characteristics
 
 - **Table 2**: Primary Endpoint Analysis (Disease-Free Survival)
   - Intention-to-treat analysis of first events for DFS
-  - Hazard ratios and confidence intervals
-  - Statistical significance testing
+  - Event types and cumulative incidences
+  - Statistical comparisons between treatment arms
 
 - **Table 3**: Overall Survival Analysis
   - Intention-to-treat analysis of all-cause deaths
@@ -81,7 +94,7 @@ datathlon1/
   - Risk tables and statistical comparisons
 
 - **Figure 3**: Cumulative Incidence Curves
-  - Panel A: Locoregional recurrence (*Note: Missing data limitations*)
+  - Panel A: Locoregional recurrence
   - Panel B: Distant metastases
 
 - **Figure 4**: Forest Plot
@@ -117,47 +130,51 @@ datathlon1/
 ## Requirements
 
 ### R Version
-- R 3.1.1 or higher
+- R 4.4.3 or compatible version
 
 ### Required R Packages
 
 ```r
 # Core survival analysis
-survival (>= 2.37.7)
-prodlim (>= 1.4.3)
-coin (>= 1.0.24)
-coxme (>= 2.2.3)
+survival
+prodlim
+coin
+coxme
 
 # Data manipulation and visualization
 dplyr
 ggplot2
 survminer
-gridExtra
+tidycmprsk
+ggsurvfit
 
 # Table generation
 flextable
-officer
+knitr
+kableExtra
 
 # Additional packages
-rmeta (>= 2.16)
-mgcv (>= 1.8.1)
-multcomp (>= 1.3.6)
-cmprsk (>= 2.2-7)
 consort
 forestplot
+tidyr
+here
 ```
 
 ## Usage Instructions
 
-### 1. Running the Complete Analysis
-
+### 1. Data Setup
 ```r
-# Run the main analysis script
-source("primary_endpoint_analysis.R")
+# Ensure the data file is placed in the correct location:
+# actual_data/Primary_endpoint_data.rda
 ```
 
-### 2. Generating Individual Tables
+### 2. Generate Complete Report
+```r
+# Render the main Quarto document (recommended)
+quarto::quarto_render("output.qmd")
+```
 
+### 3. Generate Individual Tables
 ```r
 # Table 1: Baseline characteristics
 source("tables_scripts/table1_script.r")
@@ -169,72 +186,49 @@ source("tables_scripts/table2_script.r")
 source("tables_scripts/table3_script.r")
 ```
 
-### 3. Generating Figures
-
-```r
-# Figure 2: Kaplan-Meier curves
-source("figures_scripts/figure2_script.r")
-```
-
-### 4. Generating Reports
-
-```r
-# Render Quarto report
-quarto::quarto_render("output.qmd")
-
-# Process Sweave document
-Sweave("Primary_endpoint.Rnw")
-```
+### 4. View Generated Output
+- Open `output_files/output.html` in a web browser to view the complete analysis
+- Individual table images are saved in `reproduced_tf/`
 
 ## Key Results
 
 ### Primary Endpoint (Disease-Free Survival)
 
-- **Hazard Ratio**: 5-FU + Oxaliplatin vs 5-FU alone
-- **3-year DFS**: Comparison between treatment arms
-- **5-year DFS**: Long-term outcomes
-- **Statistical significance**: p-value from stratified log-rank test
+The analysis reproduces the key findings from the original study:
+- Stratified log-rank test results for treatment comparison
+- Hazard ratios with 95% confidence intervals
+- 3-year and 5-year disease-free survival rates
+- Kaplan-Meier survival curves matching the original publication
 
-### Treatment Effect
+### Reproducibility Notes
 
-The analysis evaluates whether adding oxaliplatin to standard fluorouracil-based therapy provides a statistically significant improvement in disease-free survival for patients with locally advanced rectal cancer.
+- **Median follow-up**: Approximately 4.2 years (IQR: 5 years)
+- **Statistical software**: R version 4.4.3 with updated packages
+- **Random seed**: Set to 29 for reproducible permutation tests
+- **Computational environment**: Modern R setup due to compatibility issues with original R 3.1.2
 
-## Data Limitations
+### Minor Discrepancies
 
-- **Missing Data**: Some variables have missing values affecting certain analyses
-- **Figure 3A**: Locoregional recurrence curves could not be fully reproduced due to missing data
-- **Table 2**: Minor discrepancies in some values due to data availability
+Some minor discrepancies with the original paper were noted:
+- **Table 2**: Cumulative locoregional recurrence counts differ slightly (data availability)
+- **Figure 1**: Small differences in adjuvant chemotherapy flow numbers
+- All primary statistical results (p-values, hazard ratios) match the original publication
 
-## Reproducibility
+## Technical Details
 
 ### Session Information
-All analyses include session information documenting:
-- R version
-- Package versions
-- Operating system
-- Computational environment
-
-### Random Seed
-- Set to 29 for all permutation tests and resampling procedures
-- Ensures reproducible p-values and confidence intervals
+All analyses include comprehensive session information documenting R version, package versions, and computational environment for full reproducibility.
 
 ### Version Control
-- Package versions specified and checked
-- Warnings generated for version mismatches
-
-## Files Description
-
-- **`primary_endpoint_analysis.R`**: Comprehensive analysis script with detailed statistical methodology
-- **`output.qmd`**: Quarto markdown document generating HTML report with all tables and figures
-- **`Primary_endpoint.Rnw`**: Sweave document for LaTeX-based reporting
-- **`actual data/Primary_endpoint_data.rda`**: Clinical trial dataset containing patient-level data
-- **`reproduced_tf/`**: Directory containing reproduced tables and figures as PNG files
+- Package versions documented in analysis output
+- Code includes comprehensive comments explaining methodology
+- Statistical assumptions and limitations clearly documented
 
 ## Authors
 
-- Jifan
-- Minoo  
-- Yazid
+- **Jifan Wang**
+- **Yazid Zalai** 
+- **Minoo Matbouriahi**
 
 ## Reference
 
